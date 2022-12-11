@@ -17,3 +17,9 @@ Ready to run in production? Please [check our deployment guides](https://hexdocs
   * Docs: https://hexdocs.pm/phoenix
   * Forum: https://elixirforum.com/c/phoenix-forum
   * Source: https://github.com/phoenixframework/phoenix
+
+# TODO
+
+## 核心游戏
+
+- [ ] 对于hand这种，实际上想表述的是[card()]的概念，应该如何抽取定义模块，测试

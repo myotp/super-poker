@@ -14,21 +14,9 @@ defmodule SuperPoker.Core.Hand do
   # FIXME: 是否需要改为struct，其中某一个属性是cards?
   @type t :: [Card.t()]
 
-  def new(str) do
+  def from_string(str) do
     str
     |> String.split(" ")
     |> Enum.map(&Card.from_string/1)
-  end
-
-  # FIXME: 这里，后来再看这里代码，觉得很诡异，诡异之处就在于到底想干嘛，后来想想，是为了说ranking预备的
-  # 但是，作为API本身，完全没意义，所以，这个API完全鸡肋且不应该在这里
-  @spec get_one_card_by_rank(Hand.t(), Card.rank()) :: Card.t() | nil
-  def get_one_card_by_rank(hand, rank) do
-    Enum.find(hand, fn card -> card.rank == rank end)
-  end
-
-  @spec get_hand_by_ranks(Hand.t(), [Card.rank()]) :: Hand.t()
-  def get_hand_by_ranks(hand, ranks) do
-    Enum.map(ranks, fn rank -> get_one_card_by_rank(hand, rank) end)
   end
 end
