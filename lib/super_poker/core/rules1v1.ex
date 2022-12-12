@@ -11,8 +11,8 @@ defmodule SuperPoker.Core.Rules1v1 do
   采用Design Elixir OTP的大状态法来方便实现复杂德州扑克过程的状态变迁演化，大大优于Sudoku当时的实战效果
 
   fisrt_action_pos为本回合起始，同时也就是终止位
-  next_action_pos总是指向下一个，不管是否active，后边decide的时候，再去行动
-  这样，在decide_next_action之前，总是可以用next_action_pos来判断当前回合是否结束
+  current_action_pos总是指向下一个，不管是否active，后边decide的时候，再去行动
+  这样，在decide_next_action之前，总是可以用current_action_pos来判断当前回合是否结束
 
   Street: preflop -> flop -> turn -> river
 
@@ -54,7 +54,7 @@ defmodule SuperPoker.Core.Rules1v1 do
       # 第一行动位置，也就是结束位置，回合中，可以随着raise不断变化
       :start_action_pos,
       # 下一行动位置
-      :next_action_pos,
+      :current_action_pos,
       # 状态机决定下一步的操作
       :next_action
     ]
@@ -88,6 +88,68 @@ defmodule SuperPoker.Core.Rules1v1 do
     }
     |> set_sb_and_bb_pos()
     |> do_preflop()
+  end
+
+  def handle_action(state, {:player, pos, action}) do
+    handle_player_action(state, pos, action)
+  end
+
+  defp handle_player_action(state, pos, :check) do
+    handle_player_action(state, pos, {:call, 0})
+  end
+
+  defp handle_player_action(state, pos, {:call, amount}) do
+    state
+    |> make_player_bet(pos, amount)
+    |> decide_next_action()
+  end
+
+  defp decide_next_action(%State{start_action_pos: start_action_pos} = state) do
+    case next_table_pos(state.num_players, state.current_action_pos) do
+      ^start_action_pos ->
+        state
+        |> finish_current_street_bet()
+        |> decide_next_table_action()
+
+      next_player_pos ->
+        state = %State{state | current_action_pos: next_player_pos}
+        decide_next_player_action(state)
+    end
+  end
+
+  defp decide_next_table_action(%State{current_street: current_street} = state) do
+    case current_street do
+      :preflop ->
+        %State{state | current_street: :flop, next_action: {:table, {:deal, :flop}}}
+    end
+  end
+
+  defp decide_next_player_action(%State{current_action_pos: current_action_pos} = state) do
+    player = get_player_at_pos(state, current_action_pos)
+    player_already_bet = player.current_street_bet
+    action = player_actions(player_already_bet, state.current_call_amount)
+    %State{state | next_action: {:player, current_action_pos, [action | @user_default_actions]}}
+  end
+
+  defp player_actions(player_bet, amount_to_call) when player_bet == amount_to_call do
+    :check
+  end
+
+  # FIXME: 假设玩家筹码总是满足的情况下
+  defp player_actions(player_already_bet, amount_to_call) do
+    {:call, amount_to_call - player_already_bet}
+  end
+
+  defp finish_current_street_bet(%State{current_street_bet: current_street_bet, pot: pot} = state) do
+    %State{state | pot: pot + current_street_bet, current_street_bet: 0}
+  end
+
+  defp next_table_pos(total, pos) do
+    Integer.mod(pos + 1, total)
+  end
+
+  defp get_player_at_pos(state, pos) do
+    state.players[pos]
   end
 
   defp set_sb_and_bb_pos(%State{button_pos: button_pos, num_players: 2} = state) do
@@ -124,25 +186,11 @@ defmodule SuperPoker.Core.Rules1v1 do
   end
 
   defp reset_street_action_pos(%State{current_street: :preflop, button_pos: button_pos} = state) do
-    %State{state | start_action_pos: button_pos, next_action_pos: button_pos}
+    %State{state | start_action_pos: button_pos, current_action_pos: button_pos}
   end
 
   defp next_pos(total, pos, n \\ 1)
   defp next_pos(total, pos, 1), do: Integer.mod(pos + 1, total)
-
-  defp decide_next_player_action(%State{next_action_pos: next_pos, players: players} = state) do
-    player_already_bet = players[next_pos].current_street_bet
-    action = player_actions(player_already_bet, state.current_call_amount)
-    %State{state | next_action: {:player, next_pos, [action | @user_default_actions]}}
-  end
-
-  defp player_actions(player_bet, amount_to_call) when player_bet == amount_to_call do
-    :check
-  end
-
-  defp player_actions(player_already_bet, amount_to_call) do
-    {:call, amount_to_call - player_already_bet}
-  end
 
   defp force_bet_sb_and_bb(
          %State{sb_amount: sb_amount, bb_amount: bb_amount, sb_pos: sb_pos, bb_pos: bb_pos} =

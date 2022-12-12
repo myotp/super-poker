@@ -31,7 +31,7 @@ defmodule SuperPoker.Core.Rules1v1Test do
     test "只有两个玩家的时候，从sb开始，也就是button位开始" do
       rules = Rules1v1.new([{0, 100}, {1, 100}], 0, {10, 20})
       assert rules.start_action_pos == 0
-      assert rules.next_action_pos == 0
+      assert rules.current_action_pos == 0
     end
 
     test "盲注数量记录正确" do
@@ -62,6 +62,39 @@ defmodule SuperPoker.Core.Rules1v1Test do
       assert rules.players[1].chips == 80
       assert rules.players[1].current_street_bet == 20
       assert rules.players[1].status == :active
+    end
+  end
+
+  describe "UTG玩家也就是二人对战中的小盲位行动开始" do
+    test "UTG玩家call更新筹码统计" do
+      rules = Rules1v1.new([{0, 100}, {1, 100}], 0, {10, 20})
+      # 牌局建立，小盲出10块，大盲出20，然后小盲位先行动
+      assert rules.next_action == {:player, 0, [{:call, 10} | @user_default_actions]}
+      rules = Rules1v1.handle_action(rules, {:player, 0, {:call, 10}})
+      assert rules.players[0].chips == 80
+      assert rules.players[0].current_street_bet == 20
+      assert rules.players[0].status == :active
+      assert rules.pot == 0
+      assert rules.current_call_amount == 20
+      assert rules.current_street_bet == 10 + 20 + 10
+    end
+
+    test "UTG玩家简单call之后轮到大盲位行动" do
+      rules = Rules1v1.new([{0, 100}, {1, 100}], 0, {10, 20})
+      rules = Rules1v1.handle_action(rules, {:player, 0, {:call, 10}})
+      # 小盲位call了10块之后，轮到大盲位行动，可以check
+      assert rules.next_action == {:player, 1, [:check | @user_default_actions]}
+    end
+  end
+
+  describe "二人对战第一回合轮流交互" do
+    test "小盲call大盲check回合结束即将发牌flop" do
+      rules =
+        Rules1v1.new([{0, 100}, {1, 100}], 0, {10, 20})
+        |> Rules1v1.handle_action({:player, 0, {:call, 10}})
+        |> Rules1v1.handle_action({:player, 0, :check})
+
+      assert rules.next_action == {:table, {:deal, :flop}}
     end
   end
 end
