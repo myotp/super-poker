@@ -92,9 +92,47 @@ defmodule SuperPoker.Core.Rules1v1Test do
       rules =
         Rules1v1.new([{0, 100}, {1, 100}], 0, {10, 20})
         |> Rules1v1.handle_action({:player, 0, {:call, 10}})
-        |> Rules1v1.handle_action({:player, 0, :check})
+        |> Rules1v1.handle_action({:player, 1, :check})
 
       assert rules.next_action == {:table, {:deal, :flop}}
+    end
+  end
+
+  describe "二人对战轮流行动多回合" do
+    test "最简单主线流程验证到最终show-hands状态" do
+      rules =
+        Rules1v1.new([{0, 100}, {1, 100}], 0, {10, 20})
+        |> Rules1v1.handle_action({:player, 0, {:call, 10}})
+        |> Rules1v1.handle_action({:player, 1, :check})
+
+      assert rules.next_action == {:table, {:deal, :flop}}
+
+      # 发牌flop两玩家check
+      rules =
+        rules
+        |> Rules1v1.handle_action({:table, {:deal, :flop}})
+        |> Rules1v1.handle_action({:player, 1, :check})
+        |> Rules1v1.handle_action({:player, 0, :check})
+
+      assert rules.next_action == {:table, {:deal, :turn}}
+
+      # 发turn牌两玩家继续check
+      rules =
+        rules
+        |> Rules1v1.handle_action({:table, {:deal, :turn}})
+        |> Rules1v1.handle_action({:player, 1, :check})
+        |> Rules1v1.handle_action({:player, 0, :check})
+
+      assert rules.next_action == {:table, {:deal, :river}}
+
+      # 最终发完river牌两玩家继续check之后进入show_hands阶段
+      rules =
+        rules
+        |> Rules1v1.handle_action({:table, {:deal, :river}})
+        |> Rules1v1.handle_action({:player, 1, :check})
+        |> Rules1v1.handle_action({:player, 0, :check})
+
+      assert rules.next_action == {:table, {:show_hands, {[0, 1], 40, [{0, 80}, {1, 80}]}}}
     end
   end
 end

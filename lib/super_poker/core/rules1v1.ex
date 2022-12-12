@@ -94,6 +94,14 @@ defmodule SuperPoker.Core.Rules1v1 do
     handle_player_action(state, pos, action)
   end
 
+  def handle_action(state, {:table, {:deal, street}}) do
+    state
+    |> set_current_street(street)
+    |> reset_current_street_bet()
+    |> reset_street_action_pos()
+    |> decide_next_player_action()
+  end
+
   defp handle_player_action(state, pos, :check) do
     handle_player_action(state, pos, {:call, 0})
   end
@@ -120,8 +128,31 @@ defmodule SuperPoker.Core.Rules1v1 do
   defp decide_next_table_action(%State{current_street: current_street} = state) do
     case current_street do
       :preflop ->
-        %State{state | current_street: :flop, next_action: {:table, {:deal, :flop}}}
+        %State{state | next_action: {:table, {:deal, :flop}}}
+
+      :flop ->
+        %State{state | next_action: {:table, {:deal, :turn}}}
+
+      :turn ->
+        %State{state | next_action: {:table, {:deal, :river}}}
+
+      :river ->
+        %State{
+          state
+          | next_action: {:table, {:show_hands, show_hands_result(state)}}
+        }
     end
+  end
+
+  defp show_hands_result(state) do
+    {[0, 1], state.pot, players_chips(state)}
+  end
+
+  defp players_chips(%State{players: players}) do
+    for {n, p} <- players do
+      {n, p.chips}
+    end
+    |> Enum.sort()
   end
 
   defp decide_next_player_action(%State{current_action_pos: current_action_pos} = state) do
@@ -139,6 +170,10 @@ defmodule SuperPoker.Core.Rules1v1 do
   defp player_actions(player_already_bet, amount_to_call) do
     {:call, amount_to_call - player_already_bet}
   end
+
+  defp set_current_street(state, :flop), do: %State{state | current_street: :flop}
+  defp set_current_street(state, :turn), do: %State{state | current_street: :turn}
+  defp set_current_street(state, :river), do: %State{state | current_street: :river}
 
   defp finish_current_street_bet(%State{current_street_bet: current_street_bet, pot: pot} = state) do
     %State{state | pot: pot + current_street_bet, current_street_bet: 0}
@@ -185,8 +220,20 @@ defmodule SuperPoker.Core.Rules1v1 do
     %State{state | players: new_players}
   end
 
-  defp reset_street_action_pos(%State{current_street: :preflop, button_pos: button_pos} = state) do
+  # 二人单挑只有第一次行动从button（小盲）开始
+  defp reset_street_action_pos(
+         %State{num_players: 2, current_street: :preflop, button_pos: button_pos} = state
+       ) do
     %State{state | start_action_pos: button_pos, current_action_pos: button_pos}
+  end
+
+  # 之后的几条街都是大盲（非button位）开始
+  defp reset_street_action_pos(%State{num_players: 2, button_pos: button_pos} = state) do
+    %State{
+      state
+      | start_action_pos: next_pos(2, button_pos),
+        current_action_pos: next_pos(2, button_pos)
+    }
   end
 
   defp next_pos(total, pos, n \\ 1)
