@@ -3,8 +3,6 @@ defmodule SuperPoker.Core.Rules1v1Test do
 
   alias SuperPoker.Core.Rules1v1
 
-  @user_default_actions [:raise, :allin, :fold]
-
   describe "初始化二人对战牌局在Preflop玩家行动开始之前阶段" do
     test "游戏第一条街从preflop开始" do
       rules = Rules1v1.new([{0, 100}, {1, 100}], 0, {10, 20})
@@ -46,9 +44,10 @@ defmodule SuperPoker.Core.Rules1v1Test do
       assert rules.pot == 0
     end
 
+    @tag :wip
     test "只有两个玩家的情况下，从小盲也就是button处开始" do
       rules = Rules1v1.new([{0, 100}, {1, 100}], 0, {10, 20})
-      assert rules.next_action == {:player, 0, [{:call, 10} | @user_default_actions]}
+      assert {:player, 0, [{:call, 10}, {:raise, _}]} = rules.next_action
     end
 
     test "正确更新玩家筹码信息" do
@@ -69,7 +68,7 @@ defmodule SuperPoker.Core.Rules1v1Test do
     test "UTG玩家call更新筹码统计" do
       rules = Rules1v1.new([{0, 100}, {1, 100}], 0, {10, 20})
       # 牌局建立，小盲出10块，大盲出20，然后小盲位先行动
-      assert rules.next_action == {:player, 0, [{:call, 10} | @user_default_actions]}
+      assert {:player, 0, [{:call, 10}, {:raise, _}]} = rules.next_action
       rules = Rules1v1.handle_action(rules, {:player, 0, {:call, 10}})
       assert rules.players[0].chips == 80
       assert rules.players[0].current_street_bet == 20
@@ -83,7 +82,7 @@ defmodule SuperPoker.Core.Rules1v1Test do
       rules = Rules1v1.new([{0, 100}, {1, 100}], 0, {10, 20})
       rules = Rules1v1.handle_action(rules, {:player, 0, {:call, 10}})
       # 小盲位call了10块之后，轮到大盲位行动，可以check
-      assert rules.next_action == {:player, 1, [:check | @user_default_actions]}
+      assert {:player, 1, [:check, {:bet, _}]} = rules.next_action
     end
   end
 
@@ -98,7 +97,7 @@ defmodule SuperPoker.Core.Rules1v1Test do
     end
   end
 
-  describe "二人对战轮流行动多回合" do
+  describe "二人对战轮流行动深度优先多回合" do
     test "最简单主线流程验证到最终show-hands状态" do
       rules =
         Rules1v1.new([{0, 100}, {1, 100}], 0, {10, 20})
@@ -133,6 +132,58 @@ defmodule SuperPoker.Core.Rules1v1Test do
         |> Rules1v1.handle_action({:player, 0, :check})
 
       assert rules.next_action == {:table, {:show_hands, {[0, 1], 40, [{0, 80}, {1, 80}]}}}
+    end
+  end
+
+  describe "raise与bet筹码量的广度优先验证" do
+    test "bet的最小值为bb" do
+      rules = Rules1v1.new([{0, 99}, {1, 105}], 0, {10, 20})
+      rules = Rules1v1.handle_action(rules, {:player, 0, {:call, 10}})
+
+      # 小盲位call了10块之后，轮到大盲位行动，可以check，可以bet从bb到自己剩余筹码85(allin)为止
+      assert rules.next_action == {:player, 1, [:check, {:bet, {20, 105 - 20}}]}
+      rules = Rules1v1.handle_action(rules, {:table, {:deal, :flop}})
+
+      # 发牌之后，大盲玩家先行行动，bet数值为bb起步
+      assert rules.next_action == {:player, 1, [:check, {:bet, {20, 105 - 20}}]}
+      # 大盲简单check过牌，button玩家可以bet的值为bb到allin
+      rules = Rules1v1.handle_action(rules, {:player, 1, :check})
+      assert rules.next_action == {:player, 0, [:check, {:bet, {20, 99 - 20}}]}
+    end
+
+    test "无法满足bet的最小值的时候，就只有allin了" do
+      rules = Rules1v1.new([{0, 200}, {1, 130}], 0, {50, 100})
+      rules = Rules1v1.handle_action(rules, {:player, 0, {:call, 50}})
+
+      # 小盲位call了10块之后，轮到大盲位行动，可以check，如果bet的话，剩余筹码130-100=30不够一个bb了，只能allin了
+      assert rules.next_action == {:player, 1, [:check, {:bet, :allin}]}
+    end
+
+    test "call/raise在筹码够的情况下最小值为当前call的两倍" do
+      rules = Rules1v1.new([{0, 99}, {1, 105}], 0, {10, 20})
+      assert rules.next_action == {:player, 0, [{:call, 10}, {:raise, {30, 89}}]}
+    end
+
+    test "call/raise在筹码不够call的情况下，只有call allin了" do
+      rules =
+        Rules1v1.new([{0, 80}, {1, 500}], 0, {10, 20})
+        |> Rules1v1.handle_action({:player, 0, {:call, 10}})
+        |> Rules1v1.handle_action({:player, 1, :check})
+        |> Rules1v1.handle_action({:table, {:deal, :flop}})
+        |> Rules1v1.handle_action({:player, 1, {:bet, 100}})
+
+      assert rules.next_action == {:player, 0, [{:call, :allin}]}
+    end
+
+    test "call/raise在筹码够call但是不够raise的情况下，就只有call与raise allin了" do
+      rules =
+        Rules1v1.new([{0, 320}, {1, 500}], 0, {10, 20})
+        |> Rules1v1.handle_action({:player, 0, {:call, 10}})
+        |> Rules1v1.handle_action({:player, 1, :check})
+        |> Rules1v1.handle_action({:table, {:deal, :flop}})
+        |> Rules1v1.handle_action({:player, 1, {:bet, 250}})
+
+      assert rules.next_action == {:player, 0, [{:call, 250}, {:raise, :allin}]}
     end
   end
 end

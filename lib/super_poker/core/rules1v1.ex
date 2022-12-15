@@ -20,8 +20,6 @@ defmodule SuperPoker.Core.Rules1v1 do
   或者allin了，就直接allin了，不怕遇到有人不够allin，另开一个局的效果
   """
 
-  @user_default_actions [:raise, :allin, :fold]
-
   defmodule State do
     @moduledoc """
     这里是Rules内部State的类型定义部分，这里文档方便自己查看
@@ -97,7 +95,7 @@ defmodule SuperPoker.Core.Rules1v1 do
   def handle_action(state, {:table, {:deal, street}}) do
     state
     |> set_current_street(street)
-    |> reset_current_street_bet()
+    |> reset_current_street_bet_info()
     |> reset_street_action_pos()
     |> decide_next_player_action()
   end
@@ -110,6 +108,18 @@ defmodule SuperPoker.Core.Rules1v1 do
     state
     |> make_player_bet(pos, amount)
     |> decide_next_action()
+  end
+
+  defp handle_player_action(state, pos, {:bet, amount}) do
+    state
+    |> make_player_bet(pos, amount)
+    |> update_current_call_amount(amount)
+    |> reset_start_action_pos(pos)
+    |> decide_next_action()
+  end
+
+  defp update_current_call_amount(%State{} = state, bet_amount) do
+    %State{state | current_call_amount: bet_amount}
   end
 
   defp decide_next_action(%State{start_action_pos: start_action_pos} = state) do
@@ -155,20 +165,50 @@ defmodule SuperPoker.Core.Rules1v1 do
     |> Enum.sort()
   end
 
-  defp decide_next_player_action(%State{current_action_pos: current_action_pos} = state) do
+  defp decide_next_player_action(
+         %State{current_action_pos: current_action_pos, bb_amount: bb_amount} = state
+       ) do
     player = get_player_at_pos(state, current_action_pos)
     player_already_bet = player.current_street_bet
-    action = player_actions(player_already_bet, state.current_call_amount)
-    %State{state | next_action: {:player, current_action_pos, [action | @user_default_actions]}}
+
+    actions =
+      player_actions(player_already_bet, state.current_call_amount, bb_amount, player.chips)
+
+    %State{state | next_action: {:player, current_action_pos, actions}}
   end
 
-  defp player_actions(player_bet, amount_to_call) when player_bet == amount_to_call do
-    :check
+  # 玩家已经下注满足当前call数量,基本上只是在开局大盲适用
+  defp player_actions(player_already_bet, current_call_amount, bb_amount, chips_left)
+       when player_already_bet == current_call_amount do
+    if chips_left > bb_amount do
+      [:check, {:bet, {bb_amount, chips_left}}]
+    else
+      [:check, {:bet, :allin}]
+    end
   end
 
-  # FIXME: 假设玩家筹码总是满足的情况下
-  defp player_actions(player_already_bet, amount_to_call) do
-    {:call, amount_to_call - player_already_bet}
+  # 玩家已经下注未满足call数量，别人领叫，或者自己bet被raise的情况下
+  defp player_actions(player_already_bet, current_call_amount, _bb_amount, chips_left) do
+    amount_to_call = current_call_amount - player_already_bet
+
+    # 筹码量不足满call
+    if chips_left <= amount_to_call do
+      [{:call, :allin}]
+    else
+      # 筹码量不足满raise
+      if chips_left <= raise_limit(current_call_amount) do
+        [{:call, amount_to_call}, {:raise, :allin}]
+      else
+        [
+          {:call, amount_to_call},
+          {:raise, {current_call_amount * 2 - player_already_bet, chips_left}}
+        ]
+      end
+    end
+  end
+
+  defp raise_limit(call_amount) do
+    call_amount * 2
   end
 
   defp set_current_street(state, :flop), do: %State{state | current_street: :flop}
@@ -200,24 +240,19 @@ defmodule SuperPoker.Core.Rules1v1 do
   # 处理每一条街
   defp do_preflop(state) do
     state
-    |> reset_current_street_bet()
-    |> reset_players_current_street_bet()
+    |> reset_current_street_bet_info()
     |> force_bet_sb_and_bb()
     |> reset_street_action_pos()
     |> decide_next_player_action()
   end
 
-  defp reset_current_street_bet(%State{} = state) do
-    %State{state | current_street_bet: 0}
-  end
-
-  defp reset_players_current_street_bet(%State{players: players} = state) do
+  defp reset_current_street_bet_info(%State{players: players} = state) do
     new_players =
       players
       |> Enum.map(fn {n, %Player{} = player} -> {n, %{player | current_street_bet: 0}} end)
       |> Enum.into(%{})
 
-    %State{state | players: new_players}
+    %State{state | current_street_bet: 0, current_call_amount: 0, players: new_players}
   end
 
   # 二人单挑只有第一次行动从button（小盲）开始
@@ -234,6 +269,10 @@ defmodule SuperPoker.Core.Rules1v1 do
       | start_action_pos: next_pos(2, button_pos),
         current_action_pos: next_pos(2, button_pos)
     }
+  end
+
+  defp reset_start_action_pos(%State{} = state, pos) do
+    %State{state | start_action_pos: pos}
   end
 
   defp next_pos(total, pos, n \\ 1)
