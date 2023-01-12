@@ -20,6 +20,8 @@ defmodule SuperPoker.Core.Card do
   @all_suits [:spades, :hearts, :clubs, :diamonds]
   def all_suits(), do: @all_suits
 
+  def all_ranks(), do: Enum.to_list(2..14)
+
   def from_string(str) do
     [rank, suit] = String.codepoints(str)
     new(string_to_rank(rank), ascii_string_to_suit(suit))
@@ -27,8 +29,8 @@ defmodule SuperPoker.Core.Card do
 
   # FIXME: 这里，不确定是否对外需要暴露new/2，毕竟14对外部没有什么意义
   @spec new(rank(), suit()) :: Card.t()
-  defp new(rank, suit)
-       when suit in @all_suits and rank in 2..14 do
+  def new(rank, suit)
+      when suit in @all_suits and rank in 2..14 do
     %Card{rank: rank, suit: suit}
   end
 
