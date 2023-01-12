@@ -32,16 +32,31 @@
 
 ## 翻牌前preflop阶段模拟计算起手牌胜率
 
+### Ace对 胜率
+`EquitySummary.hole_cards_equity_report("AH AD")`
+
+| rounds |   win | tie |  lose |
+|--------|-------|-----|-------|
+|    100 |    88 |   0 |    12 |
+|   1000 |   860 |   2 |   138 |
+|  10000 |  8527 |  53 |  1420 |
+| 100000 | 85077 | 562 | 14361 |
+
 ### Ace King 不同花
-| 模拟回合数 |    胜 |   平 |    负 |
-|  --------- |  ---- | ---- |   --- |
-|        100 |    38 |    2 |    60 |
-|       1000 |   351 |   21 |   628 |
-|      10000 |  3393 |  176 |  6431 |
-|     100000 | 33914 | 1648 | 64438 |
+在Optimizing Ace King书中P20提到
+`EquitySummary.hole_cards_equity_report("AH KD")`
+
+| rounds |   win | tie |  lose |
+|--------|-------|-----|-------|
+|    100 |    62 |   2 |    36 |
+|   1000 |   622 |  22 |   356 |
+|  10000 |  6444 | 163 |  3393 |
+| 100000 | 64532 |1659 | 33809 |
 
 ## 翻牌前对战胜率
 以ACE KING书中 ♠️A♥️K 对 ♣️5♦️5 为例子，以AK角度看胜利
+`EquitySummary.preflop_equity_report("AH KS", "5D 5C")`
+
 | rounds |   win | tie |  lose |
 |--------|-------|-----|-------|
 |    100 |    39 |   0 |    61 |
@@ -51,3 +66,9 @@
 
 书中给出的Equity是AK=45%, 55=55%
 
+## 涉及到的命令
+```
+EquitySummary.hole_cards_equity_report("AH AD")
+EquitySummary.hole_cards_equity_report("AH KD")
+EquitySummary.preflop_equity_report("AH KS", "5D 5C")
+```
