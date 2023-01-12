@@ -186,4 +186,16 @@ defmodule SuperPoker.Core.Rules1v1Test do
       assert rules.next_action == {:player, 0, [{:call, 250}, {:raise, :allin}]}
     end
   end
+
+  # describe "二人对战轮流行动广度优先单回合交互广度优先验证" do
+  #   test "前人领打,自己call"
+
+  #   test "前人没打,自己领打bet"
+
+  #   test "前人领打,自己raise,结束位置更新到再次回到自己(不包括)"
+
+  #   test "自己领打,对手筹码够call跟注"
+
+  #   test "自己领打,对手筹码不够allin跟注,自己超额部分退回"
+  # end
 end
