@@ -1,0 +1,1 @@
+alias SuperPoker.Core.Card
