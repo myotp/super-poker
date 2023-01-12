@@ -1,31 +1,17 @@
-defmodule SuperPoker.Core.CardTest do
+defmodule SuperPoker.Core.DeckTest do
   use ExUnit.Case
-  doctest SuperPoker.Core.Card
-  alias SuperPoker.Core.Card
+  doctest SuperPoker.Core.Deck
+  alias SuperPoker.Core.Deck
 
-  test "create a card from string" do
-    assert %Card{} = Card.from_string("2S")
-    assert %Card{} = Card.from_string("AH")
-    assert %Card{} = Card.from_string("TS")
-    assert %Card{} = Card.from_string("QD")
-  end
+  test "Deck from Ace to 2" do
+    deck = Deck.seq_deck52()
+    assert Enum.count(deck) == 52
 
-  test "card to string" do
-    assert "2S" == Card.from_string("2S") |> Card.to_string()
-    assert "AH" == Card.from_string("AH") |> Card.to_string()
-    assert "KC" == Card.from_string("KC") |> Card.to_string()
-    assert "JD" == Card.from_string("JD") |> Card.to_string()
-  end
-
-  test "card to emoji string" do
-    assert "♠️ 2" == Card.from_string("2S") |> Card.to_emoji_string()
-    assert "♥️ J" == Card.from_string("JH") |> Card.to_emoji_string()
-    assert "♣️ K" == Card.from_string("KC") |> Card.to_emoji_string()
-    assert "♦️ A" == Card.from_string("AD") |> Card.to_emoji_string()
-  end
-
-  test "10 is a little special" do
-    assert "♥️ 10" == Card.from_string("TH") |> Card.to_emoji_string()
-    assert "TH" == Card.from_string("TH") |> Card.to_string()
+    [ace1, ace2, ace3, ace4, king1 | _] = deck
+    assert ace1.rank == 14
+    assert ace2.rank == 14
+    assert ace3.rank == 14
+    assert ace4.rank == 14
+    assert king1.rank == 13
   end
 end

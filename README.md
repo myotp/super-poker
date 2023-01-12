@@ -27,3 +27,48 @@
   - 而bet的话，就可以以bb作为起始，每bb为加价
 - 由于fold总是可选项之一，故模型next_action部分，不包括fold了就，可以简化一些编程麻烦
 - 即使二人对战就已经相当复杂了，幸亏先从二人对战实现开始
+
+# GTO
+
+## 翻牌前preflop阶段模拟计算起手牌胜率
+
+### Ace对 胜率
+`EquitySummary.hole_cards_equity_report("AH AD")`
+
+| rounds |   win | tie |  lose |
+|--------|-------|-----|-------|
+|    100 |    88 |   0 |    12 |
+|   1000 |   860 |   2 |   138 |
+|  10000 |  8527 |  53 |  1420 |
+| 100000 | 85077 | 562 | 14361 |
+
+### Ace King 不同花
+在Optimizing Ace King书中P20提到
+`EquitySummary.hole_cards_equity_report("AH KD")`
+
+| rounds |   win | tie |  lose |
+|--------|-------|-----|-------|
+|    100 |    62 |   2 |    36 |
+|   1000 |   622 |  22 |   356 |
+|  10000 |  6444 | 163 |  3393 |
+| 100000 | 64532 |1659 | 33809 |
+
+## 翻牌前对战胜率
+以ACE KING书中 ♠️A♥️K 对 ♣️5♦️5 为例子，以AK角度看胜利
+`EquitySummary.preflop_equity_report("AH KS", "5D 5C")`
+
+| rounds |   win | tie |  lose |
+|--------|-------|-----|-------|
+|    100 |    39 |   0 |    61 |
+|   1000 |   447 |   2 |   551 |
+|  10000 |  4613 |  35 |  5352 |
+| 100000 | 44811 | 371 | 54818 |
+
+书中给出的Equity是AK=45%, 55=55%
+
+## 涉及到的命令
+```
+EquitySummary.hole_cards_equity_report("AH AD")
+EquitySummary.hole_cards_equity_report("AH KD")
+EquitySummary.preflop_equity_report("AH KS", "5D 5C")
+```
