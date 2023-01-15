@@ -73,4 +73,5 @@ EquitySummary.hole_cards_equity_report("AH KD")
 EquitySummary.preflop_equity_report("AH KS", "5D 5C")
 
 EquityCalculator.preflop_hand_vs_hand("AH KD", "5S 5C", rounds: 100_000, sample_print: :lose, sample_rate: 0.001)
+Range.from_string("KK+/AK+")
 ```
