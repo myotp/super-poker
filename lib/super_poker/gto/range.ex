@@ -15,37 +15,67 @@ defmodule SuperPoker.Gto.Range do
       [rank, rank, "+"] ->
         {:pair_from, Card.string_to_rank(rank)}
 
-      [high, low, "+"] ->
-        {:high_low, Card.string_to_rank(high), Card.string_to_rank(low)}
+      [high, low | opts] ->
+        {:high_low, Card.string_to_rank(high), Card.string_to_rank(low),
+         parse_high_low_opts(opts)}
     end
   end
 
+  defp parse_high_low_opts(opts) do
+    default_opts = %{from: false, suit: :suit_and_offsuit}
+
+    Enum.reduce(opts, default_opts, fn
+      "s", acc -> Map.put(acc, :suit, :suit)
+      "o", acc -> Map.put(acc, :suit, :offsuit)
+      "+", acc -> Map.put(acc, :from, true)
+    end)
+  end
+
+  # AA
   defp generate_hands({:pair_from, rank}) do
     rank..Card.ace_rank()
     |> Enum.map(&generate_pair_with_rank/1)
     |> Enum.concat()
   end
 
-  defp generate_hands({:high_low, high, low}) do
+  # AK+
+  defp generate_hands({:high_low, high, low, %{from: true, suit: suit_opts}}) do
     high..Card.ace_rank()
-    |> Enum.map(fn h -> generate_high_and_low_from(h, low) end)
+    |> Enum.map(fn h -> do_generate_high_and_low_from(h, low, suit_opts) end)
     |> Enum.concat()
   end
 
-  defp generate_high_and_low_from(high, low0) do
+  # AK
+  defp generate_hands({:high_low, high, low, %{from: false, suit: suit_opts}}) do
+    do_generate_high_low_combos(high, low, suit_opts)
+  end
+
+  defp do_generate_high_and_low_from(high, low0, suit_opts) do
     for low <- low0..(high - 1) do
-      generate_high_low_combos(high, low)
+      do_generate_high_low_combos(high, low, suit_opts)
     end
     |> Enum.concat()
   end
 
-  defp generate_high_low_combos(high, low) when high != low do
+  # 最终产生X-Y是否花色组合的工作函数
+  defp do_generate_high_low_combos(high, low, :suit_and_offsuit) when high > low do
     for high_card <- Card.all_cards_with_rank(high) do
       for low_card <- Card.all_cards_with_rank(low) do
         [high_card, low_card]
       end
     end
     |> Enum.concat()
+  end
+
+  defp do_generate_high_low_combos(high, low, :suit) when high > low do
+    for suit <- Card.all_suits() do
+      [Card.new(high, suit), Card.new(low, suit)]
+    end
+  end
+
+  defp do_generate_high_low_combos(high, low, :offsuit) when high > low do
+    do_generate_high_low_combos(high, low, :suit_and_offsuit) --
+      do_generate_high_low_combos(high, low, :suit)
   end
 
   defp generate_pair_with_rank(rank) do

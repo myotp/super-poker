@@ -35,6 +35,33 @@ defmodule SuperPoker.Gto.RangeTest do
       hands = Range.from_string("KQ+")
       assert Enum.count(hands) == 48
     end
+
+    test "KQ 只产生KQ不同组合共16种" do
+      hands = Range.from_string("KQ")
+      assert Enum.count(hands) == 16
+    end
+  end
+
+  describe "产生花色限制" do
+    test "AKs 只产生AK同花色组合共4种" do
+      hands = Range.from_string("AKs")
+      assert Enum.count(hands) == 4
+    end
+
+    test "AQs+ 产生同花色 AK AQ共8种组合" do
+      hands = Range.from_string("AQs+")
+      assert Enum.count(hands) == 8
+    end
+
+    test "KQs+ 产生同花色 AK AQ KQ共12种组合" do
+      hands = Range.from_string("KQs+")
+      assert Enum.count(hands) == 12
+    end
+
+    test "AKo 产生AK不同花色组合共12种" do
+      hands = Range.from_string("AKo")
+      assert Enum.count(hands) == 12
+    end
   end
 
   describe "混合对子与高牌范围" do
@@ -46,6 +73,13 @@ defmodule SuperPoker.Gto.RangeTest do
     test "QQ+/KQ+ 产生QKA对子6x3=18种组合，以及KQ+的组合48种" do
       hands = Range.from_string("QQ+/KQ+")
       assert Enum.count(hands) == 6 * 3 + 48
+    end
+  end
+
+  describe "范围产生大检查" do
+    test "22+/32+ 产生全部总共1326种组合" do
+      hands = Range.from_string("22+/32+")
+      assert Enum.count(hands) == 1326
     end
   end
 end
