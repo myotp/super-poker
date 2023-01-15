@@ -84,6 +84,8 @@ defmodule SuperPoker.Core.Card do
   defp suit_to_points(:hearts), do: 2
   defp suit_to_points(:clubs), do: 1
   defp suit_to_points(:diamonds), do: 0
+
+  def ace_rank(), do: 14
 end
 
 # 这里一个Inspect类似Python的__repr__函数，一个String.Chars类似__str__函数

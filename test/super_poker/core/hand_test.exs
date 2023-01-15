@@ -46,4 +46,14 @@ defmodule SuperPoker.Core.HandTest do
   # TODO
   describe "四条比较看手牌情况而定" do
   end
+
+  describe "简单排序" do
+    test "按照黑红梅方顺序给手牌排序才能保证后续去除重复时候的正确" do
+      [c1, c2, c3, c4] = Hand.from_string("AD AC AH AS") |> Hand.sort()
+      assert c1.suit == :spades
+      assert c2.suit == :hearts
+      assert c3.suit == :clubs
+      assert c4.suit == :diamonds
+    end
+  end
 end
