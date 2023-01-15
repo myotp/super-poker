@@ -27,4 +27,4 @@ config :logger, level: :warn
 config :phoenix, :plug_init_mode, :runtime
 
 config :super_poker,
-  equity_sample_rounds: 10_000
+  equity_random_rounds: 10_000

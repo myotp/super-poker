@@ -2,7 +2,6 @@ defmodule SuperPoker.Core.HandTest do
   use ExUnit.Case
   doctest SuperPoker.Core.Hand
   alias SuperPoker.Core.Hand
-  alias SuperPoker.Core.Card
 
   describe "牌型之间比较大小" do
     test "皇家同花顺比任何都大" do
