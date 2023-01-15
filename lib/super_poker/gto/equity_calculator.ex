@@ -26,7 +26,7 @@ defmodule SuperPoker.Gto.EquityCalculator do
         ^game_result ->
           if :rand.uniform() < Keyword.get(opts, :sample_rate, @sample_rate) do
             IO.puts(
-              "#{inspect(hand1)} #{game_result} #{inspect(hand2)} #{inspect(community_cards)}"
+              "#{inspect(hand1)} #{game_result} #{inspect(hand2)} #{inspect(Hand.sort(community_cards))}"
             )
           end
 

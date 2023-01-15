@@ -69,12 +69,21 @@ defmodule SuperPoker.Core.Card do
   defp rank_to_string(14), do: "A"
   defp rank_to_string(num), do: Integer.to_string(num)
 
-  defp string_to_rank("T"), do: 10
-  defp string_to_rank("J"), do: 11
-  defp string_to_rank("Q"), do: 12
-  defp string_to_rank("K"), do: 13
-  defp string_to_rank("A"), do: 14
-  defp string_to_rank(s), do: String.to_integer(s)
+  def string_to_rank("T"), do: 10
+  def string_to_rank("J"), do: 11
+  def string_to_rank("Q"), do: 12
+  def string_to_rank("K"), do: 13
+  def string_to_rank("A"), do: 14
+  def string_to_rank(s), do: String.to_integer(s)
+
+  def card_to_points(%Card{rank: rank, suit: suit}) do
+    rank * 4 + suit_to_points(suit)
+  end
+
+  defp suit_to_points(:spades), do: 3
+  defp suit_to_points(:hearts), do: 2
+  defp suit_to_points(:clubs), do: 1
+  defp suit_to_points(:diamonds), do: 0
 end
 
 # 这里一个Inspect类似Python的__repr__函数，一个String.Chars类似__str__函数

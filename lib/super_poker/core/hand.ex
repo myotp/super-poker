@@ -66,4 +66,8 @@ defmodule SuperPoker.Core.Hand do
       true -> :eq
     end
   end
+
+  def sort(cards) do
+    Enum.sort_by(cards, &Card.card_to_points/1, :desc)
+  end
 end
