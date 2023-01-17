@@ -41,9 +41,9 @@ defmodule SuperPoker.Gto.EquityCalculator do
 
   defp run_one_round_random_hand_vs_hand(hand1, hand2) do
     community_cards =
-      random_deck()
+      Deck.random_deck()
       |> exclude_cards([hand1, hand2])
-      |> take_n_cards_from_deck(5)
+      |> Deck.top_n_cards(5)
 
     {Hand.compare(hand1, hand2, community_cards), community_cards}
   end
@@ -56,15 +56,6 @@ defmodule SuperPoker.Gto.EquityCalculator do
   # 重构代码，更底层的--或者Enum.split被用新的领域语言函数封装，可读性更好
   defp exclude_cards(cards, cards_to_exclude) do
     cards -- List.flatten(cards_to_exclude)
-  end
-
-  defp random_deck() do
-    Deck.random_deck()
-  end
-
-  defp take_n_cards_from_deck(deck, n) do
-    {cards, _} = Enum.split(deck, n)
-    cards
   end
 
   defp parse_hand(hand) when is_list(hand), do: hand

@@ -75,3 +75,21 @@ EquitySummary.preflop_equity_report("AH KS", "5D 5C")
 EquityCalculator.preflop_hand_vs_hand("AH KD", "5S 5C", rounds: 100_000, sample_print: :lose, sample_rate: 0.001)
 Range.from_string("KK+/AK+")
 ```
+
+# 概率统计
+
+## 100万次随机模拟7张牌牌力统计
+`RankingProbabilityReport.hand_types(1_000_000)`
+
+|   出现次数 |          类型   |
+|-----------|-----------------|
+|        36 | royal_flush     |  
+|       284 | straight_flush  | 
+|      1671 | four_of_a_kind  | 
+|     25990 | full_house      | 
+|     30156 | flush           | 
+|     46251 | straight        | 
+|     48420 | three_of_a_kind | 
+|    235364 | two_pairs       | 
+|    438057 | pair            | 
+|    173771 | high_card       | 
