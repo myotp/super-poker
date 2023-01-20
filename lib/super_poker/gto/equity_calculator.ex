@@ -21,6 +21,10 @@ defmodule SuperPoker.Gto.EquityCalculator do
     hand_vs_other(hand, {:range, range}, [], opts)
   end
 
+  def preflop_hand_vs_atc(hand1, opts \\ []) do
+    hand_vs_other(hand1, :atc, [], opts)
+  end
+
   # 最终实现主入口
   defp hand_vs_other(hero_hand, villain_hand_or_range, _community_cards, opts) do
     h_cards = parse_hand(hero_hand)
@@ -38,7 +42,7 @@ defmodule SuperPoker.Gto.EquityCalculator do
         ^game_result ->
           if :rand.uniform() < Keyword.get(opts, :sample_rate, @sample_rate) do
             IO.puts(
-              "#{inspect(h_cards)} #{game_result} #{inspect(v_cards)} #{inspect(Hand.sort(community_cards))}"
+              "#{inspect(h_cards)} #{game_result} #{inspect(Hand.sort(v_cards))} #{inspect(Hand.sort(community_cards))}"
             )
           end
 
@@ -63,6 +67,18 @@ defmodule SuperPoker.Gto.EquityCalculator do
       |> Combo.remove_blocker_combos(blocker_cards)
 
     fn -> Enum.random(hands) end
+  end
+
+  defp hand_generator(:atc, hero_cards) do
+    deck =
+      Deck.seq_deck52()
+      |> exclude_cards(hero_cards)
+
+    fn ->
+      deck
+      |> Deck.shuffle()
+      |> Deck.top_n_cards(2)
+    end
   end
 
   defp run_one_round_random_hand_vs_hand(hand1, hand2) do

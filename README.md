@@ -75,6 +75,7 @@ EquitySummary.preflop_equity_report("AH KS", "5D 5C")
 EquityCalculator.preflop_hand_vs_hand("AH KD", "5S 5C", rounds: 100_000, sample_print: :lose, sample_rate: 0.001)
 Range.from_string("KK+/AK+")
 EquityCalculator.preflop_hand_vs_range("AH KD", "JJ+/AK", rounds: 100_000, sample_print: :win, sample_rate: 0.001)
+EquityCalculator.preflop_hand_vs_atc("AH KD", rounds: 100_000, sample_print: :lose, sample_rate: 0.001)
 ```
 # 具体手牌Ace-King详细报告
 ```

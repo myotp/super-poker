@@ -25,6 +25,15 @@ defmodule SuperPoker.Gto.EquityCalculatorTest do
       assert close_to?(hand_ak_equity, 40) == true
       assert close_to?(hand_range_jj_ak_equity, 60) == true
     end
+
+    test "手牌vsATC(Any two cards) AKo 对 全范围任意两张大约有65%胜率" do
+      hand_ak = Hand.from_string("AH KD")
+
+      {hand_ak_equity, hand_atc_equity} = EquityCalculator.preflop_hand_vs_atc(hand_ak)
+
+      assert close_to?(hand_ak_equity, 65) == true
+      assert close_to?(hand_atc_equity, 35) == true
+    end
   end
 
   defp close_to?(x, expected, deviation \\ @allowed_deviation_for_test) do
