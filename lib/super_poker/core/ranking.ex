@@ -51,6 +51,21 @@ defmodule SuperPoker.Core.Ranking do
     |> run_checks(checks)
   end
 
+  def types() do
+    [
+      :royal_flush,
+      :straight_flush,
+      :four_of_a_kind,
+      :full_house,
+      :flush,
+      :straight,
+      :three_of_a_kind,
+      :two_pairs,
+      :pair,
+      :high_card
+    ]
+  end
+
   defp run_checks(hand, [f | checks]) do
     case f.(hand) do
       %Ranking{} = result ->

@@ -1,4 +1,10 @@
-alias SuperPoker.Core.Card
-alias SuperPoker.Core.Deck
+alias SuperPoker.Core.{Card, Deck, Hand}
+
+# GTO相关
 alias SuperPoker.Gto.PreflopEquity
-alias SuperPoker.Gto.EquitySummary
+alias SuperPoker.Gto.{EquityCalculator, Range}
+
+# GTO报告
+alias SuperPoker.GtoReport.EquitySummary
+alias SuperPoker.GtoReport.RankingProbabilityReport
+alias SuperPoker.GtoReport.AceKingReport

@@ -66,4 +66,18 @@ defmodule SuperPoker.Core.Hand do
       true -> :eq
     end
   end
+
+  def sort(cards) do
+    Enum.sort_by(cards, &Card.card_to_points/1, :desc)
+  end
+
+  def no_same_card?(cards1, cards2) do
+    s1 = MapSet.new(cards1)
+    s2 = MapSet.new(cards2)
+    MapSet.disjoint?(s1, s2)
+  end
+
+  def with_same_card?(cards1, cards2) do
+    not no_same_card?(cards1, cards2)
+  end
 end

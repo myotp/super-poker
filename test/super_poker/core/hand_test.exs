@@ -2,7 +2,6 @@ defmodule SuperPoker.Core.HandTest do
   use ExUnit.Case
   doctest SuperPoker.Core.Hand
   alias SuperPoker.Core.Hand
-  alias SuperPoker.Core.Card
 
   describe "牌型之间比较大小" do
     test "皇家同花顺比任何都大" do
@@ -46,5 +45,33 @@ defmodule SuperPoker.Core.HandTest do
 
   # TODO
   describe "四条比较看手牌情况而定" do
+  end
+
+  describe "简单排序" do
+    test "按照黑红梅方顺序给手牌排序才能保证后续去除重复时候的正确" do
+      [c1, c2, c3, c4] = Hand.from_string("AD AC AH AS") |> Hand.sort()
+      assert c1.suit == :spades
+      assert c2.suit == :hearts
+      assert c3.suit == :clubs
+      assert c4.suit == :diamonds
+    end
+  end
+
+  describe "no_same_card?/2" do
+    test "两手牌没有相同的牌" do
+      hand = Hand.from_string("AH AD")
+      hand1 = Hand.from_string("AS 7S")
+      hand2 = Hand.from_string("9S AC AS")
+      assert Hand.no_same_card?(hand, hand1) == true
+      assert Hand.no_same_card?(hand, hand2) == true
+    end
+
+    test "两手牌有相同的牌" do
+      hand = Hand.from_string("AH AD")
+      hand1 = Hand.from_string("AD 7S")
+      hand2 = Hand.from_string("9S AH")
+      assert Hand.with_same_card?(hand, hand1) == true
+      assert Hand.with_same_card?(hand, hand2) == true
+    end
   end
 end

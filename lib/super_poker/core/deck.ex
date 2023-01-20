@@ -22,4 +22,9 @@ defmodule SuperPoker.Core.Deck do
     seq_deck52()
     |> shuffle()
   end
+
+  def top_n_cards(deck, n) do
+    {cards, _} = Enum.split(deck, n)
+    cards
+  end
 end

@@ -28,4 +28,8 @@ defmodule SuperPoker.Core.CardTest do
     assert "♥️ 10" == Card.from_string("TH") |> Card.to_emoji_string()
     assert "TH" == Card.from_string("TH") |> Card.to_string()
   end
+
+  test "all cards with rank" do
+    assert Enum.count(Card.all_cards_with_rank(14)) == 4
+  end
 end
