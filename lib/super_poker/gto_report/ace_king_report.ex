@@ -1,4 +1,4 @@
-defmodule SuperPoker.Gto.AceKingReport do
+defmodule SuperPoker.GtoReport.AceKingReport do
   alias SuperPoker.Gto.EquityCalculator
 
   def report_all(rounds \\ 10_000) do

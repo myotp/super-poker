@@ -14,60 +14,31 @@ defmodule SuperPoker.Gto.EquityCalculator do
   #        sample_print: :lose,
   #        sample_rate: 0.02]
   def preflop_hand_vs_hand(hand1, hand2, opts \\ []) do
-    hand_vs_hand(hand1, hand2, [], opts)
+    hand_vs_other(hand1, {:hand, hand2}, [], opts)
   end
 
   def preflop_hand_vs_range(hand, range, opts \\ []) do
-    hand_vs_range(hand, range, [], opts)
+    hand_vs_other(hand, {:range, range}, [], opts)
   end
 
   # 最终实现主入口
-  defp hand_vs_hand(hand1, hand2, _community_cards, opts) do
-    hand1 = parse_hand(hand1)
-    hand2 = parse_hand(hand2)
+  defp hand_vs_other(hero_hand, villain_hand_or_range, _community_cards, opts) do
+    h_cards = parse_hand(hero_hand)
 
-    1..rounds(opts)
-    |> Enum.reduce(%{win: 0, tie: 0, lose: 0}, fn _, acc ->
-      {game_result, community_cards} = run_one_round_random_hand_vs_hand(hand1, hand2)
-
-      case Keyword.get(opts, :sample_print) do
-        ^game_result ->
-          if :rand.uniform() < Keyword.get(opts, :sample_rate, @sample_rate) do
-            IO.puts(
-              "#{inspect(hand1)} #{game_result} #{inspect(hand2)} #{inspect(Hand.sort(community_cards))}"
-            )
-          end
-
-        _ ->
-          :ok
-      end
-
-      Map.update!(acc, game_result, fn x -> x + 1 end)
-    end)
-    |> equity_from_win_tie_lose_result()
-  end
-
-  # TODO 这里，重构代码
-  defp hand_vs_range(hand, range, _community_cards, opts) do
-    hand1 = parse_hand(hand)
-
-    hands =
-      range
-      |> Range.from_string()
-      |> Combo.remove_blocker_combos(hand1)
+    villain_hand_generator = hand_generator(villain_hand_or_range, h_cards)
 
     1..rounds(opts)
     |> Enum.reduce(%{win: 0, tie: 0, lose: 0}, fn _, acc ->
       maybe_strong_set_random_seed(Keyword.get(opts, :strong_seed, false))
-      hand2 = Enum.random(hands)
+      v_cards = villain_hand_generator.()
 
-      {game_result, community_cards} = run_one_round_random_hand_vs_hand(hand1, hand2)
+      {game_result, community_cards} = run_one_round_random_hand_vs_hand(h_cards, v_cards)
 
       case Keyword.get(opts, :sample_print) do
         ^game_result ->
           if :rand.uniform() < Keyword.get(opts, :sample_rate, @sample_rate) do
             IO.puts(
-              "#{inspect(hand1)} #{game_result} #{inspect(hand2)} #{inspect(Hand.sort(community_cards))}"
+              "#{inspect(h_cards)} #{game_result} #{inspect(v_cards)} #{inspect(Hand.sort(community_cards))}"
             )
           end
 
@@ -78,6 +49,20 @@ defmodule SuperPoker.Gto.EquityCalculator do
       Map.update!(acc, game_result, fn x -> x + 1 end)
     end)
     |> equity_from_win_tie_lose_result()
+  end
+
+  defp hand_generator({:hand, hand}, _) do
+    hand = parse_hand(hand)
+    fn -> hand end
+  end
+
+  defp hand_generator({:range, range}, blocker_cards) do
+    hands =
+      range
+      |> Range.from_string()
+      |> Combo.remove_blocker_combos(blocker_cards)
+
+    fn -> Enum.random(hands) end
   end
 
   defp run_one_round_random_hand_vs_hand(hand1, hand2) do

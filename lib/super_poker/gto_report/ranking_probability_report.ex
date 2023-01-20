@@ -1,4 +1,4 @@
-defmodule SuperPoker.Gto.RankingProbabilityReport do
+defmodule SuperPoker.GtoReport.RankingProbabilityReport do
   alias SuperPoker.Core.Ranking
   alias SuperPoker.Gto.RankingProbability
 

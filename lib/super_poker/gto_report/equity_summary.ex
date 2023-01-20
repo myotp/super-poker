@@ -1,5 +1,5 @@
 # 这个模块，是利用基础的equity计算模块，用来生成一些统计结果的
-defmodule SuperPoker.Gto.EquitySummary do
+defmodule SuperPoker.GtoReport.EquitySummary do
   alias SuperPoker.Core.Hand
   alias SuperPoker.Gto.PreflopEquity
 
