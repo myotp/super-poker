@@ -56,4 +56,22 @@ defmodule SuperPoker.Core.HandTest do
       assert c4.suit == :diamonds
     end
   end
+
+  describe "no_same_card?/2" do
+    test "两手牌没有相同的牌" do
+      hand = Hand.from_string("AH AD")
+      hand1 = Hand.from_string("AS 7S")
+      hand2 = Hand.from_string("9S AC AS")
+      assert Hand.no_same_card?(hand, hand1) == true
+      assert Hand.no_same_card?(hand, hand2) == true
+    end
+
+    test "两手牌有相同的牌" do
+      hand = Hand.from_string("AH AD")
+      hand1 = Hand.from_string("AD 7S")
+      hand2 = Hand.from_string("9S AH")
+      assert Hand.with_same_card?(hand, hand1) == true
+      assert Hand.with_same_card?(hand, hand2) == true
+    end
+  end
 end

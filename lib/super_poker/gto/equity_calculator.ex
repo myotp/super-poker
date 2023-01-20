@@ -3,14 +3,22 @@
 # 因此这里模拟多少轮就固定下来了
 defmodule SuperPoker.Gto.EquityCalculator do
   alias SuperPoker.Core.{Deck, Hand}
+  alias SuperPoker.Gto.{Range, Combo}
 
   @rounds 100_000
   @sample_rate 0.01
 
   # ============== 对外可使用的API接口 ===============
-  # opts: [rounds: 100_000, sample_print: :lose, sample_rate: 0.02]
+  # opts: [rounds: 100_000,
+  #        strong_seed: false
+  #        sample_print: :lose,
+  #        sample_rate: 0.02]
   def preflop_hand_vs_hand(hand1, hand2, opts \\ []) do
     hand_vs_hand(hand1, hand2, [], opts)
+  end
+
+  def preflop_hand_vs_range(hand, range, opts \\ []) do
+    hand_vs_range(hand, range, [], opts)
   end
 
   # 最终实现主入口
@@ -20,6 +28,39 @@ defmodule SuperPoker.Gto.EquityCalculator do
 
     1..rounds(opts)
     |> Enum.reduce(%{win: 0, tie: 0, lose: 0}, fn _, acc ->
+      {game_result, community_cards} = run_one_round_random_hand_vs_hand(hand1, hand2)
+
+      case Keyword.get(opts, :sample_print) do
+        ^game_result ->
+          if :rand.uniform() < Keyword.get(opts, :sample_rate, @sample_rate) do
+            IO.puts(
+              "#{inspect(hand1)} #{game_result} #{inspect(hand2)} #{inspect(Hand.sort(community_cards))}"
+            )
+          end
+
+        _ ->
+          :ok
+      end
+
+      Map.update!(acc, game_result, fn x -> x + 1 end)
+    end)
+    |> equity_from_win_tie_lose_result()
+  end
+
+  # TODO 这里，重构代码
+  defp hand_vs_range(hand, range, _community_cards, opts) do
+    hand1 = parse_hand(hand)
+
+    hands =
+      range
+      |> Range.from_string()
+      |> Combo.remove_blocker_combos(hand1)
+
+    1..rounds(opts)
+    |> Enum.reduce(%{win: 0, tie: 0, lose: 0}, fn _, acc ->
+      maybe_strong_set_random_seed(Keyword.get(opts, :strong_seed, false))
+      hand2 = Enum.random(hands)
+
       {game_result, community_cards} = run_one_round_random_hand_vs_hand(hand1, hand2)
 
       case Keyword.get(opts, :sample_print) do
@@ -56,6 +97,15 @@ defmodule SuperPoker.Gto.EquityCalculator do
   # 重构代码，更底层的--或者Enum.split被用新的领域语言函数封装，可读性更好
   defp exclude_cards(cards, cards_to_exclude) do
     cards -- List.flatten(cards_to_exclude)
+  end
+
+  defp maybe_strong_set_random_seed(false), do: :ok
+
+  defp maybe_strong_set_random_seed(true) do
+    {a, b, c} = :os.timestamp()
+    str = "#{a}-#{b}-#{c}-#{:rand.uniform()}"
+    <<random_seed_number::little-size(256)>> = :crypto.hash(:sha256, str)
+    :rand.seed(:default, random_seed_number)
   end
 
   defp parse_hand(hand) when is_list(hand), do: hand
