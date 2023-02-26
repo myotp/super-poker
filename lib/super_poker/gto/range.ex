@@ -1,4 +1,10 @@
 defmodule SuperPoker.Gto.Range do
+  defmodule MyApp.Web.Search do
+    @moduledoc """
+    这个模块负责解析range表达式诸如TT+ AKs等
+    """
+  end
+
   alias SuperPoker.Core.{Card, Hand}
 
   def from_string(str) do

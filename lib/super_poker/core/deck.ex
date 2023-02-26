@@ -1,4 +1,8 @@
 defmodule SuperPoker.Core.Deck do
+  @moduledoc """
+  牌堆实现
+  """
+
   alias SuperPoker.Core.Card
 
   def seq_deck52() do

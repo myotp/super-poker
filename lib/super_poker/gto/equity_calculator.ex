@@ -2,6 +2,10 @@
 # 经过前边的探索，基本明确了，实际过程中就用10万轮来进行模拟
 # 因此这里模拟多少轮就固定下来了
 defmodule SuperPoker.Gto.EquityCalculator do
+  @moduledoc """
+  计算普通equity
+  """
+
   alias SuperPoker.Core.{Deck, Hand}
   alias SuperPoker.Gto.{Range, Combo}
 
