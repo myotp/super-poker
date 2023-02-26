@@ -1,4 +1,8 @@
 defmodule SuperPoker.GtoReport.RankingProbabilityReport do
+  @moduledoc """
+  统计若干手牌带有公共牌出现某种牌型，比如同花，顺子的概率统计
+  """
+
   alias SuperPoker.Core.Ranking
   alias SuperPoker.Gto.RankingProbability
 
