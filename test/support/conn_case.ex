@@ -19,15 +19,15 @@ defmodule SuperPokerWeb.ConnCase do
 
   using do
     quote do
+      # The default endpoint for testing
+      @endpoint SuperPokerWeb.Endpoint
+
+      use SuperPokerWeb, :verified_routes
+
       # Import conveniences for testing with connections
       import Plug.Conn
       import Phoenix.ConnTest
       import SuperPokerWeb.ConnCase
-
-      alias SuperPokerWeb.Router.Helpers, as: Routes
-
-      # The default endpoint for testing
-      @endpoint SuperPokerWeb.Endpoint
     end
   end
 
