@@ -7,7 +7,8 @@ defmodule SuperPokerWeb.Endpoint do
   @session_options [
     store: :cookie,
     key: "_super_poker_key",
-    signing_salt: "sGS40QgL"
+    signing_salt: "Daxtm24O",
+    same_site: "Lax"
   ]
 
   socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
@@ -20,7 +21,7 @@ defmodule SuperPokerWeb.Endpoint do
     at: "/",
     from: :super_poker,
     gzip: false,
-    only: ~w(assets fonts images favicon.ico robots.txt)
+    only: SuperPokerWeb.static_paths()
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.

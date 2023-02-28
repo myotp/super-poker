@@ -8,10 +8,10 @@ defmodule SuperPoker.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      # Start the Ecto repository
-      SuperPoker.Repo,
       # Start the Telemetry supervisor
       SuperPokerWeb.Telemetry,
+      # Start the Ecto repository
+      SuperPoker.Repo,
       # Start the PubSub system
       {Phoenix.PubSub, name: SuperPoker.PubSub},
       # Start the Endpoint (http/https)
