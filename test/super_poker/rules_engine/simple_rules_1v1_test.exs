@@ -86,4 +86,10 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1Test do
                {:player, {1, [:fold, {:call, player_0_total_bet - bb_amount}, :raise]}}
     end
   end
+
+  describe "验证首回合轮到大盲玩家行动之后事件正确" do
+    test "大盲玩家fold, 则小盲玩家赢下"
+    test "大盲玩家call平跟, 该轮到牌桌发flop三张牌"
+    test "大盲玩家raise, 小盲再次call, 则轮到牌桌发flop三张牌"
+  end
 end
