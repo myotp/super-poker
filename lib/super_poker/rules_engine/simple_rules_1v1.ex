@@ -79,7 +79,7 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1 do
       pot: 0,
       current_street: :preflop,
       current_street_bet: 0,
-      players: players_from_tuple_list(players_data)
+      players: from_players_input_data(players_data)
     }
     |> set_sb_and_bb_pos_for_only_two_players_game()
     |> decide_next_action()
@@ -131,7 +131,7 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1 do
   end
 
   # ============ 处理外部事件之后的规则推进 ===========
-  def handle_action(table, :notify_blind_bet_done) do
+  def handle_action(table, {:table, :notify_blind_bet_done}) do
     table
     |> reset_current_street_bet_info()
     |> force_bet_sb_and_bb()
@@ -199,7 +199,7 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1 do
   end
 
   # ============ 通用类帮助函数helper functions =========
-  defp players_from_tuple_list(players_data) do
+  defp from_players_input_data(players_data) do
     Enum.reduce(players_data, Map.new(), fn {pos, chips}, acc ->
       Map.put(acc, pos, %Player{pos: pos, chips: chips})
     end)
