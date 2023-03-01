@@ -22,6 +22,10 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1Test do
       # button为小盲，正确下注小盲金额
       assert table.players[0].chips == 95
       assert table.players[1].chips == 190
+
+      # 当前轮下注，尚未进入pot池子当中
+      assert table.pot == 0
+      assert table.current_street_bet == 15
     end
 
     test "验证下一步事件正确" do
@@ -29,7 +33,7 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1Test do
         Rules.new([{0, 100}, {1, 200}], 0, {5, 10})
         |> Rules.handle_action(:notify_blind_bet_done)
 
-      assert table.next_action == {:player, {0, [{:call, 5}, :raise, :fold]}}
+      assert table.next_action == {:player, {0, [:fold, {:call, 5}, :raise]}}
     end
   end
 end

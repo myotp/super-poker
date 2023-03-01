@@ -86,10 +86,11 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1 do
   end
 
   # ============ 主要的基于状态机的决定当下操作 ============
-  # 当pot为空的时候，处于游戏最初状态，需要大小盲下注，这里也产生事件，好让游戏服务器通知各个玩家大小盲下注
+  # 当pot为空, 且当前轮下注为0的时候，处于游戏最初状态，需要大小盲下注，这里也产生事件，好让游戏服务器通知各个玩家大小盲下注
   defp decide_next_action(
          %Table{
            pot: 0,
+           current_street_bet: 0,
            sb_amount: sb_amount,
            bb_amount: bb_amount,
            sb_pos: sb_pos,
@@ -102,13 +103,31 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1 do
   end
 
   # 结束玩家为nil，表示前边尚未有任何玩家行动过
-  defp decide_next_action(%Table{next_player_pos: nil} = table) do
+  defp decide_next_action(%Table{end_player_pos: nil} = table) do
     decide_next_player_action(table)
   end
 
-  defp decide_next_player_action(%Table{} = table) do
-    # TODO
-    table
+  defp decide_next_player_action(%Table{next_player_pos: next_player_pos} = table) do
+    player = get_player_at_pos(table, next_player_pos)
+    player_already_bet = player.current_street_bet
+    actions = player_actions(player_already_bet, table.current_call_amount)
+    %Table{table | next_action: {:player, {next_player_pos, actions}}}
+  end
+
+  # 玩家已经下注满足当前call数量,开局大盲适用,或者首位行动玩家, 这里简化版对战规则刻意做了几点简化
+  # 1. 不考虑玩家筹码不足的情况
+  # 2. 不考虑复杂下注规则，比如限制倍数
+  # 3. raise任意数量，并且假设是在满足call的之后的数量
+  # 4. 假设服务器是个无知服务器，所以fold也这里显式返回
+  defp player_actions(player_already_bet, current_call_amount)
+       when player_already_bet == current_call_amount do
+    [:fold, :check, :raise]
+  end
+
+  # 玩家已经下注未满足call数量，别人领叫，或者自己bet被raise的情况下
+  defp player_actions(player_already_bet, current_call_amount) do
+    amount_to_call = current_call_amount - player_already_bet
+    [:fold, {:call, amount_to_call}, :raise]
   end
 
   # ============ 处理外部事件之后的规则推进 ===========
@@ -157,6 +176,10 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1 do
   defp do_player_bet(%Player{chips: chips, current_street_bet: already_bet} = player, amount)
        when chips >= amount do
     %Player{player | chips: chips - amount, current_street_bet: already_bet + amount}
+  end
+
+  defp get_player_at_pos(table, pos) do
+    table.players[pos]
   end
 
   # 二人单挑只有第一次行动从button（小盲）开始
