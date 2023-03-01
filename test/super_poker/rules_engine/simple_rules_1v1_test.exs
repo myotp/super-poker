@@ -26,6 +26,9 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1Test do
       # 当前轮下注，尚未进入pot池子当中
       assert table.pot == 0
       assert table.current_street_bet == 15
+
+      # 盲注之后，当前call的值为大盲
+      assert table.current_call_amount == 10
     end
 
     test "验证下一步事件正确" do
@@ -33,6 +36,7 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1Test do
         Rules.new(%{0 => 100, 1 => 200}, 0, {5, 10})
         |> Rules.handle_action({:table, :notify_blind_bet_done})
 
+      assert table.current_call_amount == 10
       assert table.next_action == {:player, {0, [:fold, {:call, 5}, :raise]}}
     end
   end
@@ -44,7 +48,7 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1Test do
         |> Rules.handle_action({:table, :notify_blind_bet_done})
         |> Rules.handle_action({:player, {0, :fold}})
 
-      assert table.next_action == {:winner, {1, %{0 => 95, 1 => 205}}}
+      assert table.next_action == {:winner, 1, %{0 => 95, 1 => 205}}
     end
 
     test "小盲玩家call平跟" do
@@ -53,17 +57,33 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1Test do
         |> Rules.handle_action({:table, :notify_blind_bet_done})
         |> Rules.handle_action({:player, {0, :call}})
 
+      # 当前下注尚未进入最终pot池子
+      assert table.pot == 0
+      assert table.current_street_bet == 20
+      # 验证该轮到大盲玩家行动
       assert table.next_action == {:player, {1, [:fold, :check, :raise]}}
     end
 
     test "小盲玩家raise加注" do
+      bb_amount = 20
+      sb_amount = 10
+
       table =
-        Rules.new(%{0 => 100, 1 => 200}, 0, {5, 10})
+        Rules.new(%{0 => 100, 1 => 200}, 0, {sb_amount, bb_amount})
         |> Rules.handle_action({:table, :notify_blind_bet_done})
-        |> Rules.handle_action({:player, {0, {:raise, 30}}})
+        |> Rules.handle_action({:player, {0, {:raise, 35}}})
+
+      # 小盲玩家总共下注计算
+      amount_for_player_0_to_call = bb_amount - sb_amount
+      player_0_force_sb_bet = sb_amount
+      player_0_total_bet = 35 + amount_for_player_0_to_call + player_0_force_sb_bet
+
+      # 小盲玩家加注之后，当前总共需要call的值就为小盲玩家到这里总下注值
+      assert table.current_call_amount == player_0_total_bet
 
       # raise需要隐含额外加上call的金额
-      assert table.next_action == {:player, {1, [:fold, {:call, 30 + 5}, :raise]}}
+      assert table.next_action ==
+               {:player, {1, [:fold, {:call, player_0_total_bet - bb_amount}, :raise]}}
     end
   end
 end

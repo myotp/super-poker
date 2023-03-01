@@ -107,6 +107,12 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1 do
     decide_next_player_action(table)
   end
 
+  # 结束玩家不为下一个玩家，表示前边玩家有行动，现在轮到新玩家操作
+  defp decide_next_action(%Table{end_player_pos: end_pos, next_player_pos: next_pos} = table)
+       when end_pos != next_pos do
+    decide_next_player_action(table)
+  end
+
   defp decide_next_player_action(%Table{next_player_pos: next_player_pos} = table) do
     player = get_player_at_pos(table, next_player_pos)
     player_already_bet = player.current_street_bet
@@ -139,6 +145,47 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1 do
     |> decide_next_action()
   end
 
+  # 玩家fold情况
+  def handle_action(table, {:player, {player_pos, :fold}}) do
+    winner_pos =
+      case player_pos do
+        0 -> 1
+        1 -> 0
+      end
+
+    winner_chips = table.players[winner_pos].chips + table.pot + table.current_street_bet
+
+    %Table{
+      table
+      | next_action:
+          {:winner, winner_pos,
+           %{player_pos => table.players[player_pos].chips, winner_pos => winner_chips}}
+    }
+  end
+
+  # 玩家call平跟
+  def handle_action(table, {:player, {player_pos, :call}}) do
+    amount_to_call = player_amount_to_call(table, player_pos)
+
+    table
+    |> make_player_bet(player_pos, amount_to_call)
+    |> maybe_set_end_player_pos()
+    |> move_next_action_player_pos()
+    |> decide_next_action()
+  end
+
+  # 玩家raise加注情况
+  def handle_action(table, {:player, {player_pos, {:raise, x}}}) do
+    amount_to_call = player_amount_to_call(table, player_pos)
+    total_amount = amount_to_call + x
+
+    table
+    |> make_player_bet(player_pos, total_amount)
+    |> maybe_set_end_player_pos()
+    |> move_next_action_player_pos()
+    |> decide_next_action()
+  end
+
   # ============ 针对 %Table{} 大状态汇总的迭代处理函数 ===========
   # 只有两个玩家的时候，约定sb为button位置
   defp set_sb_and_bb_pos_for_only_two_players_game(
@@ -156,6 +203,23 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1 do
     %Table{table | current_street_bet: 0, current_call_amount: 0, players: new_players}
   end
 
+  # 如果之前没有玩家行动过，则设置，或者加注情况下，设置
+  defp maybe_set_end_player_pos(table, force \\ false)
+
+  # 最普通情况，尚未有玩家行动过，第一玩家即为终止位置
+  defp maybe_set_end_player_pos(
+         %Table{end_player_pos: nil, next_player_pos: next_player_pos} = table,
+         false
+       ) do
+    %Table{table | end_player_pos: next_player_pos}
+  end
+
+  defp move_next_action_player_pos(
+         %Table{num_players: total, next_player_pos: player_pos} = table
+       ) do
+    %Table{table | next_player_pos: next_pos(total, player_pos)}
+  end
+
   defp force_bet_sb_and_bb(
          %Table{sb_amount: sb_amount, bb_amount: bb_amount, sb_pos: sb_pos, bb_pos: bb_pos} =
            table
@@ -170,7 +234,9 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1 do
 
   defp make_player_bet(table, pos, amount) do
     table = update_in(table.players[pos], &do_player_bet(&1, amount))
+
     %Table{table | current_street_bet: table.current_street_bet + amount}
+    |> maybe_update_call_amount(pos)
   end
 
   defp do_player_bet(%Player{chips: chips, current_street_bet: already_bet} = player, amount)
@@ -178,8 +244,25 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1 do
     %Player{player | chips: chips - amount, current_street_bet: already_bet + amount}
   end
 
+  defp maybe_update_call_amount(table, pos) do
+    player = get_player_at_pos(table, pos)
+
+    case player.current_street_bet > table.current_call_amount do
+      true ->
+        %Table{table | current_call_amount: player.current_street_bet}
+
+      false ->
+        table
+    end
+  end
+
   defp get_player_at_pos(table, pos) do
     table.players[pos]
+  end
+
+  defp player_amount_to_call(table, pos) do
+    player = get_player_at_pos(table, pos)
+    table.current_call_amount - player.current_street_bet
   end
 
   # 二人单挑只有第一次行动从button（小盲）开始
