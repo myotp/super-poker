@@ -36,4 +36,34 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1Test do
       assert table.next_action == {:player, {0, [:fold, {:call, 5}, :raise]}}
     end
   end
+
+  describe "验证首回合小盲玩家优先行动玩家交互事件正确" do
+    test "小盲玩家fold" do
+      table =
+        Rules.new(%{0 => 100, 1 => 200}, 0, {5, 10})
+        |> Rules.handle_action({:table, :notify_blind_bet_done})
+        |> Rules.handle_action({:player, {0, :fold}})
+
+      assert table.next_action == {:winner, {1, %{0 => 95, 1 => 205}}}
+    end
+
+    test "小盲玩家call平跟" do
+      table =
+        Rules.new(%{0 => 100, 1 => 200}, 0, {5, 10})
+        |> Rules.handle_action({:table, :notify_blind_bet_done})
+        |> Rules.handle_action({:player, {0, :call}})
+
+      assert table.next_action == {:player, {1, [:fold, :check, :raise]}}
+    end
+
+    test "小盲玩家raise加注" do
+      table =
+        Rules.new(%{0 => 100, 1 => 200}, 0, {5, 10})
+        |> Rules.handle_action({:table, :notify_blind_bet_done})
+        |> Rules.handle_action({:player, {0, {:raise, 30}}})
+
+      # raise需要隐含额外加上call的金额
+      assert table.next_action == {:player, {1, [:fold, {:call, 30 + 5}, :raise]}}
+    end
+  end
 end
