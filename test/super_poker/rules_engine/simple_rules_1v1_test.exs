@@ -101,7 +101,6 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1Test do
       assert table.next_action == {:winner, 0, %{0 => 110, 1 => 190}}
     end
 
-    @tag :wip
     test "小盲raise大盲玩家call平跟, 该轮到牌桌发flop三张牌" do
       table =
         Rules.new(%{0 => 100, 1 => 200}, 0, {5, 10})
@@ -112,6 +111,52 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1Test do
       assert table.next_action == {:table, {:deal, :flop}}
     end
 
-    test "大盲玩家raise, 小盲再次call, 则轮到牌桌发flop三张牌"
+    test "小盲call大盲玩家raise, 小盲再次call, 则轮到牌桌发flop三张牌" do
+      table =
+        Rules.new(%{0 => 100, 1 => 200}, 0, {5, 10})
+        |> Rules.handle_action({:table, :notify_blind_bet_done})
+        |> Rules.handle_action({:player, {0, :call}})
+        |> Rules.handle_action({:player, {1, {:raise, 40}}})
+
+      # 大盲玩家3bet之后，轮到小盲玩家再次行动
+      assert table.next_action == {:player, {0, [:fold, {:call, 40}, :raise]}}
+
+      # 再次轮到小盲玩家, 普通平call之后, preflop下注结束，该发flop三张牌了
+      table = Rules.handle_action(table, {:player, {0, :call}})
+      assert table.next_action == {:table, {:deal, :flop}}
+    end
+  end
+
+  describe "验证preflop下注回合结束" do
+    test "正确把下注移入pot" do
+      table =
+        Rules.new(%{0 => 100, 1 => 200}, 0, {5, 10})
+        |> Rules.handle_action({:table, :notify_blind_bet_done})
+        |> Rules.handle_action({:player, {0, :call}})
+        |> Rules.handle_action({:player, {1, :check}})
+
+      assert table.next_action == {:table, {:deal, :flop}}
+      # 双方preflop下注共20
+      assert table.current_street_bet == 0
+      assert table.pot == 20
+    end
+  end
+
+  describe "发flop之后新一轮下注开始" do
+    test "OK" do
+      table =
+        Rules.new(%{0 => 100, 1 => 200}, 0, {5, 10})
+        |> Rules.handle_action({:table, :notify_blind_bet_done})
+        |> Rules.handle_action({:player, {0, :call}})
+        |> Rules.handle_action({:player, {1, :check}})
+        |> Rules.handle_action({:table, {:done, :flop}})
+
+      # 新一轮行动开始
+      assert table.next_player_pos == 1
+      assert table.next_action == {:player, {1, [:fold, :check, :raise]}}
+      # pot设置正确了已经
+      assert table.pot == 20
+      assert table.current_street_bet == 0
+    end
   end
 end

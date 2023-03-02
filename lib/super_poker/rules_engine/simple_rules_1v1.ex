@@ -120,6 +120,8 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1 do
   end
 
   defp decide_next_table_action(%Table{current_street: current_street} = table) do
+    table = move_street_bet_to_pot(table)
+
     case current_street do
       :preflop ->
         %Table{table | next_action: {:table, {:deal, :flop}}}
@@ -167,6 +169,12 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1 do
     |> decide_next_action()
   end
 
+  def handle_action(table, {:table, {:done, :flop}}) do
+    table
+    |> set_current_street(:flop)
+    |> prepare_new_round_bet()
+  end
+
   # 玩家fold情况
   def handle_action(table, {:player, {player_pos, :fold}}) do
     winner_pos =
@@ -196,6 +204,16 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1 do
     |> decide_next_action()
   end
 
+  # 玩家check
+  def handle_action(table, {:player, {player_pos, :check}}) do
+    0 = player_amount_to_call(table, player_pos)
+
+    table
+    |> maybe_set_end_player_pos()
+    |> move_next_action_player_pos()
+    |> decide_next_action()
+  end
+
   # 玩家raise加注情况
   def handle_action(table, {:player, {player_pos, {:raise, x}}}) do
     amount_to_call = player_amount_to_call(table, player_pos)
@@ -209,6 +227,17 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1 do
   end
 
   # ============ 针对 %Table{} 大状态汇总的迭代处理函数 ===========
+  defp prepare_new_round_bet(table) do
+    table
+    |> reset_current_street_bet_info()
+    |> reset_street_action_pos()
+    |> decide_next_action()
+  end
+
+  defp set_current_street(table, street) when street in [:flop] do
+    %Table{table | current_street: street}
+  end
+
   # 只有两个玩家的时候，约定sb为button位置
   defp set_sb_and_bb_pos_for_only_two_players_game(
          %Table{button_pos: button_pos, num_players: 2} = table
@@ -265,6 +294,10 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1 do
       |> make_player_bet(bb_pos, bb_amount)
 
     %Table{table | current_call_amount: bb_amount}
+  end
+
+  defp move_street_bet_to_pot(%Table{current_street_bet: street_bet, pot: pot} = table) do
+    %Table{table | current_street_bet: 0, pot: pot + street_bet}
   end
 
   defp make_player_bet(table, pos, amount) do
