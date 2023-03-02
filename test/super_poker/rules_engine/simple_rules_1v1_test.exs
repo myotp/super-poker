@@ -81,6 +81,9 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1Test do
       # 小盲玩家加注之后，当前总共需要call的值就为小盲玩家到这里总下注值
       assert table.current_call_amount == player_0_total_bet
 
+      # 小盲玩家初次行动之后，设置正确结束位置
+      assert table.end_player_pos == 0
+
       # raise需要隐含额外加上call的金额
       assert table.next_action ==
                {:player, {1, [:fold, {:call, player_0_total_bet - bb_amount}, :raise]}}
@@ -88,8 +91,27 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1Test do
   end
 
   describe "验证首回合轮到大盲玩家行动之后事件正确" do
-    test "大盲玩家fold, 则小盲玩家赢下"
-    test "大盲玩家call平跟, 该轮到牌桌发flop三张牌"
+    test "小盲raise大盲玩家fold, 则小盲玩家赢下" do
+      table =
+        Rules.new(%{0 => 100, 1 => 200}, 0, {5, 10})
+        |> Rules.handle_action({:table, :notify_blind_bet_done})
+        |> Rules.handle_action({:player, {0, {:raise, 35}}})
+        |> Rules.handle_action({:player, {1, :fold}})
+
+      assert table.next_action == {:winner, 0, %{0 => 110, 1 => 190}}
+    end
+
+    @tag :wip
+    test "小盲raise大盲玩家call平跟, 该轮到牌桌发flop三张牌" do
+      table =
+        Rules.new(%{0 => 100, 1 => 200}, 0, {5, 10})
+        |> Rules.handle_action({:table, :notify_blind_bet_done})
+        |> Rules.handle_action({:player, {0, {:raise, 35}}})
+        |> Rules.handle_action({:player, {1, :call}})
+
+      assert table.next_action == {:table, {:deal, :flop}}
+    end
+
     test "大盲玩家raise, 小盲再次call, 则轮到牌桌发flop三张牌"
   end
 end

@@ -113,6 +113,28 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1 do
     decide_next_player_action(table)
   end
 
+  # 下一个玩家即回到第一行动玩家位置，本回合下注阶段结束
+  defp decide_next_action(%Table{end_player_pos: end_pos, next_player_pos: next_pos} = table)
+       when end_pos == next_pos do
+    decide_next_table_action(table)
+  end
+
+  defp decide_next_table_action(%Table{current_street: current_street} = table) do
+    case current_street do
+      :preflop ->
+        %Table{table | next_action: {:table, {:deal, :flop}}}
+
+      :flop ->
+        %Table{table | next_action: {:table, {:deal, :turn}}}
+
+      :turn ->
+        %Table{table | next_action: {:table, {:deal, :river}}}
+
+      :river ->
+        %Table{table | next_action: {:table, {:show_hands, :todo}}}
+    end
+  end
+
   defp decide_next_player_action(%Table{next_player_pos: next_player_pos} = table) do
     player = get_player_at_pos(table, next_player_pos)
     player_already_bet = player.current_street_bet
@@ -181,7 +203,7 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1 do
 
     table
     |> make_player_bet(player_pos, total_amount)
-    |> maybe_set_end_player_pos()
+    |> maybe_set_end_player_pos(true)
     |> move_next_action_player_pos()
     |> decide_next_action()
   end
@@ -212,6 +234,19 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1 do
          false
        ) do
     %Table{table | end_player_pos: next_player_pos}
+  end
+
+  # 玩家raise的情况下，重新来一轮新的行动
+  defp maybe_set_end_player_pos(
+         %Table{next_player_pos: next_player_pos} = table,
+         true
+       ) do
+    %Table{table | end_player_pos: next_player_pos}
+  end
+
+  # 其余情况，玩家普通check平跟call都不改变最终本轮结束位置
+  defp maybe_set_end_player_pos(table, false) do
+    table
   end
 
   defp move_next_action_player_pos(
