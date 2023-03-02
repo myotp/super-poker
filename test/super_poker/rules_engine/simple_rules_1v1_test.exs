@@ -159,4 +159,71 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1Test do
       assert table.current_street_bet == 0
     end
   end
+
+  describe "大综合流程整体验证" do
+    test "双方交互直到最后摊牌" do
+      # 启动新局，双方各500入场
+      table = Rules.new(%{0 => 500, 1 => 500}, 0, {10, 20})
+      # 初始金额验证
+      assert table.pot == 0
+      assert table.current_street_bet == 0
+      # 验证桌子需要通知大小盲下注
+      assert table.next_action == {:table, {:notify_blind_bet, %{0 => 10, 1 => 20}}}
+
+      # 牌桌通知大小盲下注
+      table = Rules.handle_action(table, {:table, :notify_blind_bet_done})
+      assert table.pot == 0
+      assert table.current_street_bet == 30
+      # 小盲先行动, 可以fold, call, raise
+      assert table.next_action == {:player, {0, [:fold, {:call, 10}, :raise]}}
+      table = Rules.handle_action(table, {:player, {0, :call}})
+      assert table.pot == 0
+      assert table.current_street_bet == 40
+
+      # 大盲简单check, 翻牌前下注结束
+      table = Rules.handle_action(table, {:player, {1, :check}})
+      # 下注处理, 翻牌前下注结束, 各人下注移入pot
+      assert table.current_street_bet == 0
+      assert table.pot == 40
+      assert table.next_action == {:table, {:deal, :flop}}
+
+      # 发牌flop之后, 该轮到大盲位先行动, button位永远最后行动
+      # 这一轮双方check
+      table = Rules.handle_action(table, {:table, {:done, :flop}})
+      assert table.next_action == {:player, {1, [:fold, :check, :raise]}}
+      table = Rules.handle_action(table, {:player, {1, :check}})
+      assert table.next_action == {:player, {0, [:fold, :check, :raise]}}
+      table = Rules.handle_action(table, {:player, {0, :check}})
+      # flop下注回合结束
+      assert table.pot == 40
+      assert table.current_street_bet == 0
+      assert table.next_action == {:table, {:deal, :turn}}
+
+      # turn回合 check-bet-call
+      table = Rules.handle_action(table, {:table, {:done, :turn}})
+      assert table.next_action == {:player, {1, [:fold, :check, :raise]}}
+      table = Rules.handle_action(table, {:player, {1, :check}})
+      assert table.next_action == {:player, {0, [:fold, :check, :raise]}}
+      # button下注15块, 我的简化，用raise实现
+      table = Rules.handle_action(table, {:player, {0, {:raise, 15}}})
+      assert table.pot == 40
+      assert table.current_street_bet == 15
+      assert table.next_action == {:player, {1, [:fold, {:call, 15}, :raise]}}
+      table = Rules.handle_action(table, {:player, {1, :call}})
+      assert table.pot == 40 + 15 + 15
+      assert table.current_street_bet == 0
+      assert table.next_action == {:table, {:deal, :river}}
+
+      # river回合bet-call
+      table = Rules.handle_action(table, {:table, {:done, :river}})
+      assert table.next_action == {:player, {1, [:fold, :check, :raise]}}
+      table = Rules.handle_action(table, {:player, {1, {:raise, 50}}})
+      assert table.next_action == {:player, {0, [:fold, {:call, 50}, :raise]}}
+      table = Rules.handle_action(table, {:player, {0, :call}})
+      assert table.pot == 170
+      assert table.current_street_bet == 0
+      # 两玩家桌子，只要到最后，一定是二人一起
+      assert table.next_action == {:table, {:show_hands, {170, %{0 => 415, 1 => 415}}}}
+    end
+  end
 end

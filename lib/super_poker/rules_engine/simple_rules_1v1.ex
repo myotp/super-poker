@@ -133,7 +133,7 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1 do
         %Table{table | next_action: {:table, {:deal, :river}}}
 
       :river ->
-        %Table{table | next_action: {:table, {:show_hands, :todo}}}
+        %Table{table | next_action: {:table, {:show_hands, final_show_hands_result(table)}}}
     end
   end
 
@@ -169,9 +169,10 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1 do
     |> decide_next_action()
   end
 
-  def handle_action(table, {:table, {:done, :flop}}) do
+  def handle_action(%Table{} = table, {:table, {:done, street}})
+      when street in [:flop, :turn, :river] do
     table
-    |> set_current_street(:flop)
+    |> set_current_street(street)
     |> prepare_new_round_bet()
   end
 
@@ -234,8 +235,22 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1 do
     |> decide_next_action()
   end
 
-  defp set_current_street(table, street) when street in [:flop] do
-    %Table{table | current_street: street}
+  defp final_show_hands_result(%Table{pot: pot} = table) do
+    p0 = get_player_at_pos(table, 0)
+    p1 = get_player_at_pos(table, 1)
+    {pot, %{0 => p0.chips, 1 => p1.chips}}
+  end
+
+  defp set_current_street(%Table{current_street: :preflop} = table, :flop) do
+    %Table{table | current_street: :flop}
+  end
+
+  defp set_current_street(%Table{current_street: :flop} = table, :turn) do
+    %Table{table | current_street: :turn}
+  end
+
+  defp set_current_street(%Table{current_street: :turn} = table, :river) do
+    %Table{table | current_street: :river}
   end
 
   # 只有两个玩家的时候，约定sb为button位置
