@@ -13,9 +13,16 @@ defmodule SuperPoker.Multiplayer.MultiplayerSup do
   @impl Supervisor
   def init(_args) do
     children = [
-      # 游戏服务器相关部分
+      # 读取所有牌桌静态信息，包括大小盲数量，最大玩家数
       SuperPoker.Multiplayer.TableLoader,
+
+      # 具体牌桌进程的DynamicSupervisor
       SuperPoker.Multiplayer.TableSup,
+
+      # 牌桌ID注册registry
+      {Registry, [keys: :unique, name: SuperPoker.Multiplayer.TableRegistry]},
+
+      # 实际触发DynamicSupervisor启动具体牌桌的进程
       SuperPoker.Multiplayer.TableStarter
     ]
 
