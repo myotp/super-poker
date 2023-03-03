@@ -1,2 +1,2 @@
 * 多人游戏后端开发调试
-TableServer.debug_state(1001)
+HeadsupTableServer.debug_state(1001)

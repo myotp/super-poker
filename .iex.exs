@@ -10,4 +10,4 @@ alias SuperPoker.GtoReport.RankingProbabilityReport
 alias SuperPoker.GtoReport.AceKingReport
 
 # 多人游戏相关
-alias SuperPoker.Multiplayer.TableServer
+alias SuperPoker.Multiplayer.HeadsupTableServer

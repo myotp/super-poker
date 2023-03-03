@@ -41,6 +41,7 @@ defmodule SuperPoker.Multiplayer.TableLoader do
         sb: 5,
         bb: 10,
         buyin: 500,
+        table: SuperPoker.Multiplayer.HeadsupTableServer,
         rules: SuperPoker.RulesEngine.SimpleRules1v1
       }
     ]

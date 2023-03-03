@@ -1,11 +1,10 @@
 defmodule SuperPoker.Multiplayer.TableSup do
   use DynamicSupervisor
   require Logger
-  alias SuperPoker.Multiplayer.TableServer
 
   # =================== Public API =====================
-  def start_table(args) do
-    DynamicSupervisor.start_child(__MODULE__, {TableServer, args})
+  def start_table(%{table: table_server_mod} = args) do
+    DynamicSupervisor.start_child(__MODULE__, {table_server_mod, args})
   end
 
   # ============= DynamicSupervisor 回调部分 =============

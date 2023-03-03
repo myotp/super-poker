@@ -1,4 +1,4 @@
-defmodule SuperPoker.Multiplayer.TableServer do
+defmodule SuperPoker.Multiplayer.HeadsupTableServer do
   use GenServer
   require Logger
 
@@ -21,6 +21,7 @@ defmodule SuperPoker.Multiplayer.TableServer do
 
   # ===================== OTP 回调部分 =================================
   def start_link(%{id: table_id} = args) do
+    log("启动 单挑对局桌子 ID=#{table_id}")
     GenServer.start_link(__MODULE__, args, name: via_table_id(table_id))
   end
 
@@ -40,13 +41,18 @@ defmodule SuperPoker.Multiplayer.TableServer do
       rules_mod: mod
     }
 
-    Logger.info("#{inspect(self())} 启动牌桌进程 #{inspect(state)}")
+    log("启动牌桌进程 #{inspect(state)}")
     {:ok, state}
   end
 
   @impl GenServer
   def handle_cast(:debug_state, state) do
-    Logger.info("[DEBUG] 牌桌 #{inspect(self())} 状态 #{inspect(state)}")
+    log("牌桌状态 #{inspect(state)}")
     {:noreply, state}
+  end
+
+  # =================== 其它 ======================
+  defp log(msg) do
+    Logger.info("#{inspect(self())}" <> msg, ansi_color: :cyan)
   end
 end
