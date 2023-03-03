@@ -15,9 +15,10 @@ defmodule SuperPoker.Application do
       # Start the PubSub system
       {Phoenix.PubSub, name: SuperPoker.PubSub},
       # Start the Endpoint (http/https)
-      SuperPokerWeb.Endpoint
+      SuperPokerWeb.Endpoint,
       # Start a worker by calling: SuperPoker.Worker.start_link(arg)
       # {SuperPoker.Worker, arg}
+      SuperPoker.Multiplayer.MultiplayerSup
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
