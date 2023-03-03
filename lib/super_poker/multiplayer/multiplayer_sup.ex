@@ -12,7 +12,13 @@ defmodule SuperPoker.Multiplayer.MultiplayerSup do
 
   @impl Supervisor
   def init(_args) do
-    children = []
+    children = [
+      # 游戏服务器相关部分
+      SuperPoker.Multiplayer.TableLoader,
+      SuperPoker.Multiplayer.TableSup,
+      SuperPoker.Multiplayer.TableStarter
+    ]
+
     Supervisor.init(children, strategy: :one_for_one)
   end
 end
