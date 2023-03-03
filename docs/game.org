@@ -1,2 +1,6 @@
 * 多人游戏后端开发调试
+# COOL 想到纯粹字符串的方式，就很容易独立测试牌桌服务器了
 HeadsupTableServer.debug_state(1001)
+HeadsupTableServer.join_table(1001, "ANNA")
+HeadsupTableServer.join_table(1001, "BOB")
+# !尽量不要这里写，而是落实到测试当中去才对
