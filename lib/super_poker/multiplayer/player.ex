@@ -15,6 +15,25 @@ defmodule SuperPoker.Multiplayer.Player do
     end)
   end
 
+  # 一方fold，另一方自动获胜，不用比牌
+  def notify_winner_result(all_players, winner, player_chips, nil) do
+    Enum.each(all_players, fn player ->
+      IO.puts("通知玩家 #{player} 赢家为 #{winner} 大伙筹码更新 #{inspect(player_chips)}")
+    end)
+  end
+
+  # 双方摊牌打平
+  def notify_winner_result(all_players, nil, players_chips, {type, win5, lose5}) do
+    Enum.each(all_players, fn player ->
+      IO.puts("""
+       通知玩家 #{player} 最终两人打平 手牌类型 #{type}
+       玩家1 #{inspect(win5)} 玩家2 #{inspect(lose5)}
+      大伙筹码更新 #{inspect(players_chips)}
+      """)
+    end)
+  end
+
+  # 正常一方获胜，另一方失败
   def notify_winner_result(all_players, winner, players_chips, {type, win5, lose5}) do
     Enum.each(all_players, fn player ->
       IO.puts("""

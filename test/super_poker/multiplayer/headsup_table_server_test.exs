@@ -130,6 +130,9 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServerTest do
       # 发出flop
       s = HeadsupTableServer.get_state(9005)
       assert Enum.count(s.community_cards) == 3
+      # 玩家手牌不变
+      assert s.player_cards[0] == cards0
+      assert s.player_cards[1] == cards1
       HeadsupTableServer.player_action_done(9005, "bob", :check)
       HeadsupTableServer.player_action_done(9005, "anna", :check)
 

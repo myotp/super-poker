@@ -193,22 +193,45 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServer do
         :do_next_action,
         %State{table: %{next_action: {:table, {:show_hands, {pot, chips}}}}} = state
       ) do
-    {winner_pos, type, win5, lose5} = decide_winner_pos(state)
-    username = pos_to_username(state, winner_pos)
-    players_chips = Map.update!(chips, winner_pos, fn current -> current + pot end)
+    case decide_winner_result(state) do
+      {nil, type, cards1, cards2} ->
+        half_pot = div(pot, 2)
 
-    PlayerAPI.notify_winner_result(
-      all_players(state),
-      username,
-      players_chips,
-      {type, win5, lose5}
-    )
+        players_chips =
+          chips
+          |> Map.update!(0, fn current -> current + half_pot end)
+          |> Map.update!(1, fn current -> current + half_pot end)
 
-    state = put_in(state.p0.chips, players_chips[0])
-    state = put_in(state.p1.chips, players_chips[1])
-    state = put_in(state.p0.status, :JOINED)
-    state = put_in(state.p1.status, :JOINED)
-    {:noreply, %State{state | table_status: :WAITING}}
+        PlayerAPI.notify_winner_result(
+          all_players(state),
+          nil,
+          players_chips,
+          {type, cards1, cards2}
+        )
+
+        state = put_in(state.p0.chips, players_chips[0])
+        state = put_in(state.p1.chips, players_chips[1])
+        state = put_in(state.p0.status, :JOINED)
+        state = put_in(state.p1.status, :JOINED)
+        {:noreply, %State{state | table_status: :WAITING}}
+
+      {winner_pos, type, win5, lose5} ->
+        username = pos_to_username(state, winner_pos)
+        players_chips = Map.update!(chips, winner_pos, fn current -> current + pot end)
+
+        PlayerAPI.notify_winner_result(
+          all_players(state),
+          username,
+          players_chips,
+          {type, win5, lose5}
+        )
+
+        state = put_in(state.p0.chips, players_chips[0])
+        state = put_in(state.p1.chips, players_chips[1])
+        state = put_in(state.p0.status, :JOINED)
+        state = put_in(state.p1.status, :JOINED)
+        {:noreply, %State{state | table_status: :WAITING}}
+    end
   end
 
   # 一方投降，不用比牌，rules已经算好pot给谁，最终每个人多少了
@@ -217,7 +240,7 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServer do
         %State{table: %{next_action: {:winner, pos, players_chips}}} = state
       ) do
     username = pos_to_username(state, pos)
-    PlayerAPI.notify_winner_result(all_players(state), username, players_chips)
+    PlayerAPI.notify_winner_result(all_players(state), username, players_chips, nil)
     state = put_in(state.p0.chips, players_chips[0])
     state = put_in(state.p1.chips, players_chips[1])
     state = put_in(state.p0.status, :JOINED)
@@ -279,7 +302,7 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServer do
     }
   end
 
-  defp decide_winner_pos(%State{community_cards: community_cards} = state) do
+  defp decide_winner_result(%State{community_cards: community_cards} = state) do
     5 = Enum.count(community_cards)
 
     cards0 = state.player_cards[0]
@@ -294,6 +317,9 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServer do
 
       :lose ->
         {1, rank1.type, rank1.best_hand, rank0.best_hand}
+
+      :tie ->
+        {nil, rank0.type, rank0.best_hand, rank1.best_hand}
     end
   end
 
