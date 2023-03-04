@@ -56,6 +56,24 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServerTest do
       assert s.table != nil
     end
 
+    test "简单一方fold迅速完整完成一局对战并验证筹码更新" do
+      TableSup.start_table(%{@table_config | id: 9003})
+      HeadsupTableServer.join_table(9003, "anna")
+      HeadsupTableServer.join_table(9003, "bob")
+      HeadsupTableServer.start_game(9003, "anna")
+      HeadsupTableServer.start_game(9003, "bob")
+      s = HeadsupTableServer.get_state(9003)
+      assert s.table.next_action == {:player, {0, [:fold, {:call, 5}, :raise]}}
+      HeadsupTableServer.player_action_done(9003, "anna", :fold)
+      s = HeadsupTableServer.get_state(9003)
+      assert s.table.next_action == {:winner, 1, %{0 => 495, 1 => 505}}
+      # 确认最终玩家筹码正确设置
+      assert s.p0.chips == 495
+      assert s.p1.chips == 505
+      # 桌子回到等待状态
+      assert s.table_status == :WAITING
+    end
+
     @tag :skip
     # TODO
     test "玩家只有在牌局没开始情况下离开" do

@@ -1,8 +1,12 @@
 # TODO: 这里，先简单实现单挑桌，很多硬写的p0 p1后续都需要通用处理化
 # TODO: 不过，好处是想到反正基于名字，完全不需要客户端，可以先独立完成服务器并测试
 # TODO: 后续，结合Testing Elixir看看OTP部分如何测试，以及Design Elixir OTP也有提到OTP测试
+# TODO: 这里的table_server尽量不去处理信息，比如中间过程玩家筹码量的，完全交给rules控制就完事了
+# 筹码的控制，table_server不去管，而是rules去控制，table_server只负责转发给具体player_server
+# 具体player_server掌握自己持有的有效筹码量，并且，应该跟rules持有的是一致的
 defmodule SuperPoker.Multiplayer.HeadsupTableServer do
   use GenServer
+  alias SuperPoker.Multiplayer.Player, as: PlayerAPI
   require Logger
 
   @moduledoc """
@@ -15,6 +19,10 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServer do
 
   def start_game(table_id, username) do
     GenServer.call(via_table_id(table_id), {:start_game, username})
+  end
+
+  def player_action_done(table_id, username, action) do
+    GenServer.call(via_table_id(table_id), {:player_action_done, username, action})
   end
 
   # for testing
@@ -108,6 +116,15 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServer do
     {:reply, :ok, state, {:continue, :maybe_start_game}}
   end
 
+  def handle_call(
+        {:player_action_done, username, action},
+        _from,
+        %State{table: table, rules_mod: mod} = state
+      ) do
+    table = mod.handle_action(table, {:player, {username_to_pos(state, username), action}})
+    {:reply, :ok, %State{state | table: table}, {:continue, :do_next_action}}
+  end
+
   # 测试用
   def handle_call(:get_state, _from, state) do
     {:reply, state, state}
@@ -116,16 +133,54 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServer do
   @impl GenServer
   def handle_continue(:maybe_start_game, state) do
     if all_players_ready?(state) do
-      {:noreply, start_new_game(state), {:continue, :handle_next_action}}
+      {:noreply, start_new_game(state), {:continue, :do_next_action}}
     else
       {:noreply, state}
     end
   end
 
-  def handle_continue(:handle_next_action, state) do
-    # TODO: 这里，开始要做大小盲下注，以及后续操作，尤其是通知的部分，如何设计，方便测试
-    IO.inspect(state.table.next_action, label: "TODO开始处理rules那边下一步动作")
+  def handle_continue(
+        :do_next_action,
+        %State{table: %{next_action: {:table, {:notify_blind_bet, blinds}}}} = state
+      ) do
+    blinds =
+      blinds
+      |> Enum.map(fn {pos, amount} -> {pos_to_username(state, pos), amount} end)
+
+    IO.inspect(blinds)
+    PlayerAPI.notify_blind_bet(all_players(state), blinds)
+    {:noreply, state, {:continue, :notify_blind_bet_done}}
+  end
+
+  # 需要player操作的事件，就只是简单转发通知即可
+  def handle_continue(
+        :do_next_action,
+        %State{table: %{next_action: {:player, {pos, actions}}}} = state
+      ) do
+    username = pos_to_username(state, pos)
+    PlayerAPI.notify_player_action(all_players(state), username, actions)
     {:noreply, state}
+  end
+
+  def handle_continue(
+        :do_next_action,
+        %State{table: %{next_action: {:winner, pos, players_chips}}} = state
+      ) do
+    username = pos_to_username(state, pos)
+    PlayerAPI.notify_winner_result(all_players(state), username, players_chips)
+    state = put_in(state.p0.chips, players_chips[0])
+    state = put_in(state.p1.chips, players_chips[1])
+    {:noreply, %State{state | table_status: :WAITING}}
+  end
+
+  def handle_continue(:do_next_action, %State{table: %{next_action: action}} = state) do
+    IO.inspect(action, label: "TODO处理接下来事件")
+    {:noreply, state}
+  end
+
+  def handle_continue(:notify_blind_bet_done, %State{table: table, rules_mod: mod} = state) do
+    table = mod.handle_action(table, {:table, :notify_blind_bet_done})
+    {:noreply, %State{state | table: table}, {:continue, :do_next_action}}
   end
 
   @impl GenServer
@@ -139,6 +194,28 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServer do
     players_data = generate_players_data_for_rules_engine(state)
     table = rules_mod.new(players_data, state.button_pos, {sb, bb})
     %State{state | table_status: :RUNNING, table: table}
+  end
+
+  defp all_players(state) do
+    [state.p0.username, state.p1.username]
+  end
+
+  defp pos_to_username(state, 0) do
+    state.p0.username
+  end
+
+  defp pos_to_username(state, 1) do
+    state.p1.username
+  end
+
+  defp username_to_pos(state, username) do
+    case {state.p0.username, state.p1.username} do
+      {^username, _} ->
+        0
+
+      {_, ^username} ->
+        1
+    end
   end
 
   defp all_players_ready?(state) do
