@@ -74,6 +74,45 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServerTest do
       assert s.table_status == :WAITING
     end
 
+    test "普通call以及check验证后续发牌轮" do
+      TableSup.start_table(%{@table_config | id: 9004})
+      HeadsupTableServer.join_table(9004, "anna")
+      HeadsupTableServer.join_table(9004, "bob")
+      HeadsupTableServer.start_game(9004, "anna")
+      HeadsupTableServer.start_game(9004, "bob")
+
+      # preflop轮下注
+      HeadsupTableServer.player_action_done(9004, "anna", :call)
+      HeadsupTableServer.player_action_done(9004, "bob", :check)
+
+      # 牌桌完成自动发牌flop
+      s = HeadsupTableServer.get_state(9004)
+      assert s.table.current_street == :flop
+      assert s.table.next_action == {:player, {1, [:fold, :check, :raise]}}
+      HeadsupTableServer.player_action_done(9004, "bob", :check)
+      HeadsupTableServer.player_action_done(9004, "anna", :check)
+
+      # 牌桌完成发牌turn
+      s = HeadsupTableServer.get_state(9004)
+      assert s.table.current_street == :turn
+      assert s.table.next_action == {:player, {1, [:fold, :check, :raise]}}
+      HeadsupTableServer.player_action_done(9004, "bob", :check)
+      HeadsupTableServer.player_action_done(9004, "anna", :check)
+
+      # 牌桌完成发牌turn
+      s = HeadsupTableServer.get_state(9004)
+      assert s.table.current_street == :river
+      assert s.table.next_action == {:player, {1, [:fold, :check, :raise]}}
+      HeadsupTableServer.player_action_done(9004, "bob", :check)
+      HeadsupTableServer.player_action_done(9004, "anna", :check)
+
+      # 最终牌局结束
+      s = HeadsupTableServer.get_state(9004)
+      assert s.table_status == :WAITING
+      # 确定玩家回到等待状态
+      assert s.p0.status == :JOINED
+    end
+
     @tag :skip
     # TODO
     test "玩家只有在牌局没开始情况下离开" do

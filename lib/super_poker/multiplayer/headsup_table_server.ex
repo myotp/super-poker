@@ -129,6 +129,7 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServer do
         _from,
         %State{table: table, rules_mod: mod} = state
       ) do
+    IO.puts("收到玩家 #{username} 行动 #{inspect(action)}")
     table = mod.handle_action(table, {:player, {username_to_pos(state, username), action}})
     {:reply, :ok, %State{state | table: table}, {:continue, :do_next_action}}
   end
@@ -172,12 +173,41 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServer do
 
   def handle_continue(
         :do_next_action,
+        %State{table: %{next_action: {:table, {:deal, street}}}} = state
+      ) do
+    IO.puts("牌桌即将发牌#{street}")
+    {cards, new_state} = take_cards(state, street)
+    PlayerAPI.notify_deal_cards(all_players(new_state), street, cards)
+    {:noreply, new_state, {:continue, {:deal_done, street}}}
+  end
+
+  # 到最后摊牌阶段，rules无从知道谁大谁小，只返回pot与每个人最后的剩余筹码，服务器决定赢者拿走多少
+  def handle_continue(
+        :do_next_action,
+        %State{table: %{next_action: {:table, {:show_hands, {pot, chips}}}}} = state
+      ) do
+    winner_pos = decide_winner_pos(state)
+    username = pos_to_username(state, winner_pos)
+    players_chips = Map.update!(chips, winner_pos, fn current -> current + pot end)
+    PlayerAPI.notify_winner_result(all_players(state), username, players_chips)
+    state = put_in(state.p0.chips, players_chips[0])
+    state = put_in(state.p1.chips, players_chips[1])
+    state = put_in(state.p0.status, :JOINED)
+    state = put_in(state.p1.status, :JOINED)
+    {:noreply, %State{state | table_status: :WAITING}}
+  end
+
+  # 一方投降，不用比牌，rules已经算好pot给谁，最终每个人多少了
+  def handle_continue(
+        :do_next_action,
         %State{table: %{next_action: {:winner, pos, players_chips}}} = state
       ) do
     username = pos_to_username(state, pos)
     PlayerAPI.notify_winner_result(all_players(state), username, players_chips)
     state = put_in(state.p0.chips, players_chips[0])
     state = put_in(state.p1.chips, players_chips[1])
+    state = put_in(state.p0.status, :JOINED)
+    state = put_in(state.p1.status, :JOINED)
     {:noreply, %State{state | table_status: :WAITING}}
   end
 
@@ -186,8 +216,15 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServer do
     {:noreply, state}
   end
 
+  # 牌桌操作事件顺序
   def handle_continue(:notify_blind_bet_done, %State{table: table, rules_mod: mod} = state) do
     table = mod.handle_action(table, {:table, :notify_blind_bet_done})
+    {:noreply, %State{state | table: table}, {:continue, :do_next_action}}
+  end
+
+  def handle_continue({:deal_done, street}, %State{table: table, rules_mod: mod} = state) do
+    IO.inspect(street, label: "完成发牌")
+    table = mod.handle_action(table, {:table, {:done, street}})
     {:noreply, %State{state | table: table}, {:continue, :do_next_action}}
   end
 
@@ -202,6 +239,24 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServer do
     players_data = generate_players_data_for_rules_engine(state)
     table = rules_mod.new(players_data, state.button_pos, {sb, bb})
     %State{state | table_status: :RUNNING, table: table}
+  end
+
+  # TODO: 实际用起来牌
+  defp decide_winner_pos(_state) do
+    0
+  end
+
+  # TODO: 实际处理发牌，更新state
+  defp take_cards(state, :flop) do
+    {[1, 2, 3], state}
+  end
+
+  defp take_cards(state, :turn) do
+    {[4], state}
+  end
+
+  defp take_cards(state, :river) do
+    {[5], state}
   end
 
   defp all_players(state) do

@@ -16,4 +16,10 @@ defmodule SuperPoker.Multiplayer.Player do
       IO.puts("通知玩家 #{player} 最终胜利玩家 #{winner} 大伙筹码更新 #{inspect(players_chips)}")
     end)
   end
+
+  def notify_deal_cards(all_players, street, cards) do
+    Enum.each(all_players, fn player ->
+      IO.puts("通知玩家 #{player} 当前发牌轮 #{street} 发牌 #{inspect(cards)}")
+    end)
+  end
 end
