@@ -113,7 +113,6 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServerTest do
       assert s.p0.status == :JOINED
     end
 
-    @tag :wip
     test "发牌流程测试" do
       TableSup.start_table(%{@table_config | id: 9005})
       HeadsupTableServer.join_table(9005, "anna")
