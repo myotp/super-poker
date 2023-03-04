@@ -4,6 +4,14 @@
 # TODO: 这里的table_server尽量不去处理信息，比如中间过程玩家筹码量的，完全交给rules控制就完事了
 # 筹码的控制，table_server不去管，而是rules去控制，table_server只负责转发给具体player_server
 # 具体player_server掌握自己持有的有效筹码量，并且，应该跟rules持有的是一致的
+
+# TODO 设计改进重构
+# 这里，最开始，硬写的p0, p1，然后跟玩家部分交互的时候，用的username基本是必须的，因为需要对应进程
+# 而Rules当中的0，1，2是一种抽象，比如最终桌子8人桌，只坐了三个人的话，依然抽象成0，1，2的表示
+# 后续再去考虑每个玩家所坐的位置，眼下就两个人的话，相对比较容易，不过基本原则要定好
+# 也就是table_server与玩家交互，全部使用username，便于进程查找调用
+# 反过来也一样，玩家最终player_server与table_server交互的时候，也是用的username
+# 最终翻译成Rules所需的012整理化表示，由table_server去完成
 defmodule SuperPoker.Multiplayer.HeadsupTableServer do
   use GenServer
   alias SuperPoker.Multiplayer.Player, as: PlayerAPI
