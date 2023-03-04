@@ -15,6 +15,9 @@
 defmodule SuperPoker.Multiplayer.HeadsupTableServer do
   use GenServer
   alias SuperPoker.Multiplayer.Player, as: PlayerAPI
+  alias SuperPoker.Core.Deck
+  alias SuperPoker.Core.Hand
+  alias SuperPoker.Core.Ranking
   require Logger
 
   @moduledoc """
@@ -58,6 +61,10 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServer do
       # 动态牌桌信息
       table: nil,
       table_status: :WAITING,
+      # 动态牌信息
+      deck: [],
+      community_cards: [],
+      player_cards: %{},
       # 动态玩家信息
       p0: nil,
       p1: nil,
@@ -186,10 +193,17 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServer do
         :do_next_action,
         %State{table: %{next_action: {:table, {:show_hands, {pot, chips}}}}} = state
       ) do
-    winner_pos = decide_winner_pos(state)
+    {winner_pos, type, win5, lose5} = decide_winner_pos(state)
     username = pos_to_username(state, winner_pos)
     players_chips = Map.update!(chips, winner_pos, fn current -> current + pot end)
-    PlayerAPI.notify_winner_result(all_players(state), username, players_chips)
+
+    PlayerAPI.notify_winner_result(
+      all_players(state),
+      username,
+      players_chips,
+      {type, win5, lose5}
+    )
+
     state = put_in(state.p0.chips, players_chips[0])
     state = put_in(state.p1.chips, players_chips[1])
     state = put_in(state.p0.status, :JOINED)
@@ -219,7 +233,21 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServer do
   # 牌桌操作事件顺序
   def handle_continue(:notify_blind_bet_done, %State{table: table, rules_mod: mod} = state) do
     table = mod.handle_action(table, {:table, :notify_blind_bet_done})
-    {:noreply, %State{state | table: table}, {:continue, :do_next_action}}
+    {:noreply, %State{state | table: table}, {:continue, :deal_hole_cards}}
+  end
+
+  def handle_continue(:deal_hole_cards, %State{deck: deck} = state) do
+    [c1, c2, c3, c4 | rest] = deck
+    p0 = pos_to_username(state, 0)
+    p1 = pos_to_username(state, 1)
+    cards0 = [c1, c2]
+    cards1 = [c3, c4]
+    player_cards = %{0 => cards0, 1 => cards1}
+    PlayerAPI.deal_hole_cards(p0, cards0)
+    PlayerAPI.deal_hole_cards(p1, cards1)
+
+    {:noreply, %State{state | deck: rest, player_cards: player_cards, community_cards: []},
+     {:continue, :do_next_action}}
   end
 
   def handle_continue({:deal_done, street}, %State{table: table, rules_mod: mod} = state) do
@@ -238,25 +266,52 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServer do
   defp start_new_game(%State{rules_mod: rules_mod, sb_amount: sb, bb_amount: bb} = state) do
     players_data = generate_players_data_for_rules_engine(state)
     table = rules_mod.new(players_data, state.button_pos, {sb, bb})
+    state = reset_cards(state)
     %State{state | table_status: :RUNNING, table: table}
   end
 
-  # TODO: 实际用起来牌
-  defp decide_winner_pos(_state) do
-    0
+  defp reset_cards(state) do
+    %State{
+      state
+      | deck: Deck.seq_deck52() |> Deck.shuffle() |> Deck.top_n_cards(9),
+        player_cards: %{},
+        community_cards: []
+    }
   end
 
-  # TODO: 实际处理发牌，更新state
+  defp decide_winner_pos(%State{community_cards: community_cards} = state) do
+    5 = Enum.count(community_cards)
+
+    cards0 = state.player_cards[0]
+    cards1 = state.player_cards[1]
+
+    rank0 = Ranking.run(cards0 ++ community_cards)
+    rank1 = Ranking.run(cards1 ++ community_cards)
+
+    case Hand.compare(cards0, cards1, community_cards) do
+      :win ->
+        {0, rank0.type, rank0.best_hand, rank1.best_hand}
+
+      :lose ->
+        {1, rank1.type, rank1.best_hand, rank0.best_hand}
+    end
+  end
+
   defp take_cards(state, :flop) do
-    {[1, 2, 3], state}
+    do_deal_community_cards(state, 3)
   end
 
   defp take_cards(state, :turn) do
-    {[4], state}
+    do_deal_community_cards(state, 1)
   end
 
   defp take_cards(state, :river) do
-    {[5], state}
+    do_deal_community_cards(state, 1)
+  end
+
+  defp do_deal_community_cards(%State{deck: deck, community_cards: community_cards} = state, n) do
+    {cards, rest} = Enum.split(deck, n)
+    {cards, %State{state | deck: rest, community_cards: community_cards ++ cards}}
   end
 
   defp all_players(state) do

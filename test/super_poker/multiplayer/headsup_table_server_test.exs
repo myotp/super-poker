@@ -113,6 +113,41 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServerTest do
       assert s.p0.status == :JOINED
     end
 
+    @tag :wip
+    test "发牌流程测试" do
+      TableSup.start_table(%{@table_config | id: 9005})
+      HeadsupTableServer.join_table(9005, "anna")
+      HeadsupTableServer.join_table(9005, "bob")
+      HeadsupTableServer.start_game(9005, "anna")
+      HeadsupTableServer.start_game(9005, "bob")
+      s = HeadsupTableServer.get_state(9005)
+      assert s.deck != []
+      assert s.community_cards == []
+      assert [_, _] = cards0 = s.player_cards[0]
+      assert [_, _] = cards1 = s.player_cards[1]
+      HeadsupTableServer.player_action_done(9005, "anna", :call)
+      HeadsupTableServer.player_action_done(9005, "bob", :check)
+      # 发出flop
+      s = HeadsupTableServer.get_state(9005)
+      assert Enum.count(s.community_cards) == 3
+      HeadsupTableServer.player_action_done(9005, "bob", :check)
+      HeadsupTableServer.player_action_done(9005, "anna", :check)
+
+      # 发出turn
+      s = HeadsupTableServer.get_state(9005)
+      assert Enum.count(s.community_cards) == 4
+      HeadsupTableServer.player_action_done(9005, "bob", :check)
+      HeadsupTableServer.player_action_done(9005, "anna", :check)
+
+      # 发出river
+      s = HeadsupTableServer.get_state(9005)
+      assert Enum.count(s.community_cards) == 5
+      HeadsupTableServer.player_action_done(9005, "bob", :check)
+      HeadsupTableServer.player_action_done(9005, "anna", :check)
+      s = HeadsupTableServer.get_state(9005)
+      assert s.table_status == :WAITING
+    end
+
     @tag :skip
     # TODO
     test "玩家只有在牌局没开始情况下离开" do
