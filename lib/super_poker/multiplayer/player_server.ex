@@ -10,6 +10,7 @@ defmodule SuperPoker.Multiplayer.PlayerServer do
       :total_chips,
       table_id: nil,
       hole_cards: [],
+      bet_actions: [],
       chips_on_table: 0,
       state: :LOBBY,
       clients: []
@@ -29,6 +30,10 @@ defmodule SuperPoker.Multiplayer.PlayerServer do
     GenServer.call(via_tuple(username), :start_game)
   end
 
+  def player_action(username, action) do
+    GenServer.call(via_tuple(username), {:player_action, action})
+  end
+
   # ================ 针对来自服务器端的API ====================
   def notify_blind_bet(username, blinds) do
     GenServer.call(via_tuple(username), {:blind_bet, blinds})
@@ -36,6 +41,14 @@ defmodule SuperPoker.Multiplayer.PlayerServer do
 
   def deal_hole_cards(username, hole_cards) do
     GenServer.call(via_tuple(username), {:deal_hole_cards, hole_cards})
+  end
+
+  def notify_player_todo_actions(username, action_player, actions) do
+    GenServer.call(via_tuple(username), {:todo_actions, action_player, actions})
+  end
+
+  def notify_winner_result(username, winner, player_chips) do
+    GenServer.call(via_tuple(username), {:winner_result, winner, player_chips})
   end
 
   # ================ 测试辅助 ================================
@@ -77,6 +90,7 @@ defmodule SuperPoker.Multiplayer.PlayerServer do
   end
 
   @impl GenServer
+  # ========= 来自客户端方面的请求回调 ==============
   def handle_call(
         {:join_table, table_id, buyin},
         _from,
@@ -104,6 +118,22 @@ defmodule SuperPoker.Multiplayer.PlayerServer do
   end
 
   def handle_call(
+        {:player_action, action},
+        _from,
+        %State{table_id: table_id, username: username, bet_actions: bet_actions} = state
+      ) do
+    case valid_player_action?(action, bet_actions) do
+      true ->
+        TableServerAPI.player_action_done(table_id, username, action)
+        {:reply, :ok, %State{state | bet_actions: []}}
+
+      _ ->
+        {:reply, {:error, :invalid_action}, state}
+    end
+  end
+
+  # ===================== 来自服务器的请求回调 ====================
+  def handle_call(
         {:blind_bet, blind_bet_info},
         _from,
         %State{username: username, chips_on_table: chips_on_table, clients: clients} = state
@@ -119,8 +149,45 @@ defmodule SuperPoker.Multiplayer.PlayerServer do
     {:reply, :ok, %State{state | hole_cards: hole_cards}}
   end
 
+  def handle_call(
+        {:todo_actions, action_player, actions},
+        _from,
+        %State{username: username, clients: clients} = state
+      ) do
+    if username == action_player do
+      notify_player_clients(clients, {:bet_actions, actions})
+      {:reply, :ok, %State{state | bet_actions: actions}}
+    else
+      notify_player_clients(clients, {:wating, action_player})
+      {:reply, :ok, %State{state | bet_actions: []}}
+    end
+  end
+
+  def handle_call({:winner_result, winner, player_chips}, _from, %State{clients: clients} = state) do
+    IO.puts("有人fold牌局结束，赢家#{winner} 大家筹码 #{inspect(player_chips)}")
+    state = update_chips(state, player_chips)
+    notify_player_clients(clients, {:winner, winner})
+    {:reply, :ok, state}
+  end
+
+  # ==================== 测试辅助回调 ===============================
   def handle_call(:get_state, _from, state) do
     {:reply, state, state}
+  end
+
+  # ==================== 其它辅助函数 =============================
+  # TODO: 实际的检查实现还需要处理更多细节可能操作
+  defp valid_player_action?(_action, []), do: false
+
+  defp valid_player_action?(_action, _actions) do
+    true
+  end
+
+  # TODO: 这里，等服务器修正，返回username做key之后，才有办法实现
+  # 1. 更新玩家自己的剩余筹码量
+  # 2. 更新桌上其它玩家的筹码量
+  defp update_chips(state, _player_chips) do
+    state
   end
 
   defp log(msg) do
@@ -134,6 +201,9 @@ defmodule SuperPoker.Multiplayer.PlayerServer do
   # ============================ 这里多一层函数为把所有事件集中列出来，便于后续实现客户端 ================
   # {:blind_bet, my_chips_on_table_left, blind_bet_info}
   # {:hole_cards, my_hole_cards}
+  # {:waiting_player, username}
+  # {:bet_actions, actions}
+  # {:winner, winner}
   defp notify_player_clients(clients, event) do
     Enum.each(clients, fn client_pid ->
       send(client_pid, event)

@@ -33,6 +33,7 @@ defmodule SuperPoker.Multiplayer.PlayerServerTest do
       s = HeadsupTableServer.get_state(table_id)
       assert s.p0 != nil
       assert s.p1 != nil
+
       # 玩家开始
       PlayerServer.start_game("anna")
       PlayerServer.start_game("bob")
@@ -41,6 +42,15 @@ defmodule SuperPoker.Multiplayer.PlayerServerTest do
       assert [_, _] = s.hole_cards
       s = HeadsupTableServer.get_state(table_id)
       assert s.table.next_action == {:player, {0, [:fold, {:call, 5}, :raise]}}
+
+      # 轮到anna行动
+      s = PlayerServer.get_state("anna")
+      assert s.bet_actions == [:fold, {:call, 5}, :raise]
+      s = PlayerServer.get_state("bob")
+      assert s.bet_actions == []
+
+      # # 玩家行动开始
+      PlayerServer.player_action("anna", :fold)
     end
   end
 end

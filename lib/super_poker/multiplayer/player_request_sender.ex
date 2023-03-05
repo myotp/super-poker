@@ -13,14 +13,14 @@ defmodule SuperPoker.Multiplayer.PlayerRequestSender do
 
   def notify_player_action(all_players, current_action_username, actions) do
     Enum.each(all_players, fn player ->
-      IO.puts("通知玩家 #{player} 当前等待 #{current_action_username} 可选操作 #{inspect(actions)}")
+      PlayerServer.notify_player_todo_actions(player, current_action_username, actions)
     end)
   end
 
   # 一方fold，另一方自动获胜，不用比牌
   def notify_winner_result(all_players, winner, player_chips, nil) do
     Enum.each(all_players, fn player ->
-      IO.puts("通知玩家 #{player} 赢家为 #{winner} 大伙筹码更新 #{inspect(player_chips)}")
+      PlayerServer.notify_winner_result(player, winner, player_chips)
     end)
   end
 
