@@ -23,7 +23,11 @@ defmodule SuperPoker.Multiplayer.MultiplayerSup do
       {Registry, [keys: :unique, name: SuperPoker.Multiplayer.TableRegistry]},
 
       # 实际触发DynamicSupervisor启动具体牌桌的进程
-      SuperPoker.Multiplayer.TableStarter
+      SuperPoker.Multiplayer.TableStarter,
+
+      # 玩家进程
+      {Registry, [keys: :unique, name: SuperPoker.Multiplayer.PlayerRegistry]},
+      SuperPoker.Multiplayer.PlayerSup
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

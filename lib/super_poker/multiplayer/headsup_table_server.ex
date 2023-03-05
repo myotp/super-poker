@@ -162,6 +162,7 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServer do
     blinds =
       blinds
       |> Enum.map(fn {pos, amount} -> {pos_to_username(state, pos), amount} end)
+      |> Map.new()
 
     IO.inspect(blinds)
     PlayerAPI.notify_blind_bet(all_players(state), blinds)
