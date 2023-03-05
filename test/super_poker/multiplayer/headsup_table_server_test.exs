@@ -13,7 +13,8 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServerTest do
     bb: 10,
     buyin: 500,
     table: SuperPoker.Multiplayer.HeadsupTableServer,
-    rules: SuperPoker.RulesEngine.SimpleRules1v1
+    rules: SuperPoker.RulesEngine.SimpleRules1v1,
+    player: SuperPoker.Multiplayer.PlayerRequestNull
   }
 
   describe "单挑牌桌测试" do
@@ -74,6 +75,7 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServerTest do
       assert s.table_status == :WAITING
     end
 
+    @tag :wip
     test "普通call以及check验证后续发牌轮" do
       TableSup.start_table(%{@table_config | id: 9004})
       HeadsupTableServer.join_table(9004, "anna")

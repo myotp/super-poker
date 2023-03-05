@@ -4,3 +4,15 @@ HeadsupTableServer.debug_state(1001)
 HeadsupTableServer.join_table(1001, "ANNA")
 HeadsupTableServer.join_table(1001, "BOB")
 # !尽量不要这里写，而是落实到测试当中去才对
+
+* TableServer + PlayerServer
+# TODO: 把这里变为实际的ExUnit测试用例
+PlayerServer.start_player("anna")
+PlayerServer.start_player("bob")
+PlayerServer.join_table("anna", 1001, 500)
+PlayerServer.join_table("bob", 1001, 500)
+PlayerServer.debug_state("anna")
+
+PlayerServer.start_game("anna")
+PlayerServer.start_game("bob")
+PlayerServer.debug_state("anna")
