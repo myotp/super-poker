@@ -14,7 +14,7 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServerTest do
     buyin: 500,
     table: SuperPoker.Multiplayer.HeadsupTableServer,
     rules: SuperPoker.RulesEngine.SimpleRules1v1,
-    player: SuperPoker.Multiplayer.PlayerRequestPrinter
+    player: SuperPoker.Multiplayer.PlayerRequestNull
   }
 
   describe "单挑牌桌测试" do

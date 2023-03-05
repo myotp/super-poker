@@ -1,4 +1,4 @@
-# 这个模块用来帮助测试用的
+# 这个模块用来辅助开发调试阶段使用，可以打印输入内容，方便开发调试
 defmodule SuperPoker.Multiplayer.PlayerRequestPrinter do
   def notify_blind_bet(all_players, blinds) do
     Enum.each(all_players, fn player ->

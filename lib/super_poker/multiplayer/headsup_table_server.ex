@@ -140,7 +140,7 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServer do
         _from,
         %State{table: table, rules_mod: mod} = state
       ) do
-    IO.puts("收到玩家 #{username} 行动 #{inspect(action)}")
+    log("收到玩家 #{username} 行动 #{inspect(action)}")
     table = mod.handle_action(table, {:player, {username_to_pos(state, username), action}})
     {:reply, :ok, %State{state | table: table}, {:continue, :do_next_action}}
   end
@@ -169,7 +169,7 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServer do
       |> Enum.map(fn {pos, amount} -> {pos_to_username(state, pos), amount} end)
       |> Map.new()
 
-    IO.inspect(blinds)
+    log("blinds: #{inspect(blinds)}")
     player.notify_blind_bet(all_players(state), blinds)
     {:noreply, state, {:continue, :notify_blind_bet_done}}
   end
@@ -188,7 +188,7 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServer do
         :do_next_action,
         %State{table: %{next_action: {:table, {:deal, street}}}, player_mod: player} = state
       ) do
-    IO.puts("牌桌即将发牌#{street}")
+    log("牌桌即将发牌#{street}")
     {cards, new_state} = take_cards(state, street)
     player.notify_deal_cards(all_players(new_state), street, cards)
     {:noreply, new_state, {:continue, {:deal_done, street}}}
@@ -257,11 +257,6 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServer do
     {:noreply, %State{state | table_status: :WAITING}}
   end
 
-  def handle_continue(:do_next_action, %State{table: %{next_action: action}} = state) do
-    IO.inspect(action, label: "TODO处理接下来事件")
-    {:noreply, state}
-  end
-
   # 牌桌操作事件顺序
   def handle_continue(:notify_blind_bet_done, %State{table: table, rules_mod: mod} = state) do
     table = mod.handle_action(table, {:table, :notify_blind_bet_done})
@@ -283,7 +278,7 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServer do
   end
 
   def handle_continue({:deal_done, street}, %State{table: table, rules_mod: mod} = state) do
-    IO.inspect(street, label: "完成发牌")
+    log("完成发牌 #{inspect(street)}")
     table = mod.handle_action(table, {:table, {:done, street}})
     {:noreply, %State{state | table: table}, {:continue, :do_next_action}}
   end
