@@ -27,7 +27,11 @@ defmodule SuperPoker.Multiplayer.MultiplayerSup do
 
       # 玩家进程
       {Registry, [keys: :unique, name: SuperPoker.Multiplayer.PlayerRegistry]},
-      SuperPoker.Multiplayer.PlayerSup
+      SuperPoker.Multiplayer.PlayerSup,
+
+      # Telnet相关
+      SuperPoker.Multiplayer.TelnetListenManager,
+      SuperPoker.Multiplayer.TelnetSessionSup
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

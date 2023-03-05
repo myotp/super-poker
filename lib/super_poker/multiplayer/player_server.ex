@@ -22,6 +22,10 @@ defmodule SuperPoker.Multiplayer.PlayerServer do
     DynamicSupervisor.start_child(SuperPoker.Multiplayer.PlayerSup, {__MODULE__, username})
   end
 
+  def register_client(username) do
+    GenServer.call(via_tuple(username), {:client_pid, self()})
+  end
+
   def join_table(username, table_id, buyin) do
     GenServer.call(via_tuple(username), {:join_table, table_id, buyin})
   end
@@ -91,6 +95,10 @@ defmodule SuperPoker.Multiplayer.PlayerServer do
 
   @impl GenServer
   # ========= 来自客户端方面的请求回调 ==============
+  def handle_call({:client_pid, client_pid}, _from, %State{clients: clients} = state) do
+    {:reply, :ok, %State{state | clients: [client_pid | clients]}}
+  end
+
   def handle_call(
         {:join_table, table_id, buyin},
         _from,
