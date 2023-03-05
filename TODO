@@ -1,2 +1,22 @@
+- "TODO实际处理要发送给玩家的信息"
+iex -S mix
+telnet localhost 4040
+LOGIN anna:password
+JOIN 1001
+
+# 直接state看看anna是否已经加入
+s = HeadsupTableServer.get_state(1001)
+
+# bob从shell中加入
+PlayerServer.start_player("bob")
+PlayerServer.join_table("bob", 1001, 500)
+PlayerServer.start_game("bob")
+s = HeadsupTableServer.get_state(1001)
+
+# anna也开始
+START
+s = HeadsupTableServer.get_state(1001)
+
 - 还要通知PlayerServer具体pot的值，以及每个桌子上玩家的筹码数量
 - 最终结果，大家筹码部分，应该换掉pos做key为username做key才行
+- Telnet的部分，应该用gen_tcp写个测试出来

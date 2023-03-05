@@ -16,3 +16,22 @@ PlayerServer.debug_state("anna")
 PlayerServer.start_game("anna")
 PlayerServer.start_game("bob")
 PlayerServer.debug_state("anna")
+
+* 完整端到端Telnet客户端
+iex -S mix
+telnet localhost 4040
+LOGIN anna:password
+JOIN 1001
+
+# 直接state看看anna是否已经加入
+s = HeadsupTableServer.get_state(1001)
+
+# bob从shell中加入
+PlayerServer.start_player("bob")
+PlayerServer.join_table("bob", 1001, 500)
+PlayerServer.start_game("bob")
+s = HeadsupTableServer.get_state(1001)
+
+# anna也开始
+START
+s = HeadsupTableServer.get_state(1001)
