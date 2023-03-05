@@ -43,6 +43,10 @@ defmodule SuperPoker.Multiplayer.PlayerServer do
     GenServer.cast(via_tuple(username), :debug_state)
   end
 
+  def get_state(username) do
+    GenServer.call(via_tuple(username), :get_state)
+  end
+
   # ================ GenServer回调部分 =======================
   def start_link(username) do
     Logger.info("启动玩家 #{username} 进程")
@@ -113,6 +117,10 @@ defmodule SuperPoker.Multiplayer.PlayerServer do
   def handle_call({:deal_hole_cards, hole_cards}, _from, %State{clients: clients} = state) do
     notify_player_clients(clients, {:hold_cards, hole_cards})
     {:reply, :ok, %State{state | hole_cards: hole_cards}}
+  end
+
+  def handle_call(:get_state, _from, state) do
+    {:reply, state, state}
   end
 
   defp log(msg) do
