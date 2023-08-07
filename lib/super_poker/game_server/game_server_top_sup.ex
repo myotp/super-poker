@@ -11,10 +11,10 @@ defmodule SuperPoker.GameServer.GameServerTopSup do
   def init(_args) do
     children = [
       # 读取所有牌桌静态信息，包括大小盲数量，最大玩家数
-      SuperPoker.Multiplayer.TableLoader,
+      SuperPoker.GameServer.TableLoader,
 
       # 具体牌桌进程的DynamicSupervisor
-      SuperPoker.Multiplayer.TableSup,
+      SuperPoker.GameServer.TableSupervisor,
 
       # 牌桌ID注册registry
       {Registry, [keys: :unique, name: SuperPoker.Multiplayer.TableRegistry]},

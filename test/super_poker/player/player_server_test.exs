@@ -2,7 +2,7 @@ defmodule SuperPoker.Player.PlayerServerTest do
   use ExUnit.Case
 
   alias SuperPoker.Multiplayer.HeadsupTableServer
-  alias SuperPoker.Multiplayer.TableSup
+  alias SuperPoker.GameServer.TableSupervisor
   alias SuperPoker.Player.PlayerServer
 
   @table_config %{
@@ -19,7 +19,7 @@ defmodule SuperPoker.Player.PlayerServerTest do
   describe "测试玩家进程PlayerServer与TableServer交互" do
     test "简单二人对战桌基本流程测试" do
       table_id = 8001
-      TableSup.start_table(%{@table_config | id: table_id})
+      TableSupervisor.start_table(%{@table_config | id: table_id})
       s = HeadsupTableServer.get_state(table_id)
       assert s.p0 == nil
       assert s.p1 == nil

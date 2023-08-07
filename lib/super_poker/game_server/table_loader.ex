@@ -1,4 +1,4 @@
-defmodule SuperPoker.Multiplayer.TableLoader do
+defmodule SuperPoker.GameServer.TableLoader do
   use GenServer
   require Logger
 
