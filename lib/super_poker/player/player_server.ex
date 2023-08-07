@@ -2,7 +2,7 @@ defmodule SuperPoker.Player.PlayerServer do
   use GenServer
   require Logger
 
-  alias SuperPoker.Multiplayer.HeadsupTableServer, as: TableServerAPI
+  alias SuperPoker.GameServer.HeadsupTableServer, as: TableServerAPI
 
   defmodule State do
     defstruct [

@@ -1,7 +1,7 @@
 defmodule SuperPoker.Player.PlayerServerTest do
   use ExUnit.Case
 
-  alias SuperPoker.Multiplayer.HeadsupTableServer
+  alias SuperPoker.GameServer.HeadsupTableServer
   alias SuperPoker.GameServer.TableSupervisor
   alias SuperPoker.Player.PlayerServer
 
@@ -11,7 +11,7 @@ defmodule SuperPoker.Player.PlayerServerTest do
     sb: 5,
     bb: 10,
     buyin: 500,
-    table: SuperPoker.Multiplayer.HeadsupTableServer,
+    table: SuperPoker.GameServer.HeadsupTableServer,
     rules: SuperPoker.RulesEngine.SimpleRules1v1,
     player: SuperPoker.Multiplayer.PlayerRequestSender
   }

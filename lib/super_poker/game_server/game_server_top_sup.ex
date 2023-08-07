@@ -20,7 +20,7 @@ defmodule SuperPoker.GameServer.GameServerTopSup do
       {Registry, [keys: :unique, name: SuperPoker.Multiplayer.TableRegistry]},
 
       # 实际触发DynamicSupervisor启动具体牌桌的进程
-      SuperPoker.Multiplayer.TableStarter
+      SuperPoker.GameServer.TableStarter
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

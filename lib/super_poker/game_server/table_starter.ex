@@ -1,6 +1,6 @@
 # [GOOD-OTP] 这里，是我针对DynamicSupervisor，但是我有一组清晰的概念说要启动谁的效果
 # https://elixirforum.com/t/how-to-start-dynamic-supervisor-workers-on-application-startup/3582/2
-defmodule SuperPoker.Multiplayer.TableStarter do
+defmodule SuperPoker.GameServer.TableStarter do
   # 注意transient类型restart, 负责加载完之后，此进程就完事了, 可以关闭, 无需重启
   use GenServer, restart: :transient
   require Logger

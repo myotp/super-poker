@@ -1,9 +1,9 @@
 # TODO: 明确了通过username的话，就可以定义dummy版本，方便测试了，研究后续到底该咋测试
 # TODO: 我现在直接用默认的1001的话，会有所冲突，每个建新的话，如何后继前边的状态呢
 # TODO: 尽管有Emacs可以方便插入代码到shell，还是尽量不要那么用，而是通过测试，把代码攒出来
-defmodule SuperPoker.Multiplayer.HeadsupTableServerTest do
+defmodule SuperPoker.GameServer.HeadsupTableServerTest do
   use ExUnit.Case, async: false
-  alias SuperPoker.Multiplayer.HeadsupTableServer
+  alias SuperPoker.GameServer.HeadsupTableServer
   alias SuperPoker.GameServer.TableSupervisor
 
   @table_config %{
@@ -12,7 +12,7 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServerTest do
     sb: 5,
     bb: 10,
     buyin: 500,
-    table: SuperPoker.Multiplayer.HeadsupTableServer,
+    table: SuperPoker.GameServer.HeadsupTableServer,
     rules: SuperPoker.RulesEngine.SimpleRules1v1,
     player: SuperPoker.Multiplayer.PlayerRequestNull
   }

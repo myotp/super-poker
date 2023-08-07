@@ -12,7 +12,7 @@
 # 也就是table_server与玩家交互，全部使用username，便于进程查找调用
 # 反过来也一样，玩家最终player_server与table_server交互的时候，也是用的username
 # 最终翻译成Rules所需的012整理化表示，由table_server去完成
-defmodule SuperPoker.Multiplayer.HeadsupTableServer do
+defmodule SuperPoker.GameServer.HeadsupTableServer do
   use GenServer
   alias SuperPoker.Core.Deck
   alias SuperPoker.Core.Hand
