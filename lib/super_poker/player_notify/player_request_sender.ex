@@ -1,5 +1,4 @@
 defmodule SuperPoker.PlayerNotify.PlayerRequestSender do
-  alias SuperPoker.Player.PlayerServer
   alias SuperPoker.Player
 
   def notify_blind_bet(all_players, blinds) do
