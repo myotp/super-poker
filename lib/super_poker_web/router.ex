@@ -18,6 +18,7 @@ defmodule SuperPokerWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    live "/table", TableLive
   end
 
   # Other scopes may use custom stacks.

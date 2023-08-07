@@ -22,6 +22,10 @@ defmodule SuperPoker.Player do
   end
 
   #### ============== 来自牌桌服务器的调用 ==================####
+  def notify_players_info(username, players_info) do
+    PlayerServer.notify_players_info(username, players_info)
+  end
+
   def notify_blind_bet(username, blinds) do
     PlayerServer.notify_blind_bet(username, blinds)
   end

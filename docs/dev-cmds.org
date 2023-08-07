@@ -12,3 +12,8 @@ HeadsupTableServer.debug_state(9004)
 
 HeadsupTableServer.player_action_done(9004, "anna", :call)
 HeadsupTableServer.player_action_done(9004, "bob", :check)
+
+* 配合LiveView客户端开发
+Player.start_player("anna")
+Player.join_table("anna", 1001, 500)
+HeadsupTableServer.debug_state(1001)

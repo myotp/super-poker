@@ -2,6 +2,7 @@ defmodule SuperPoker.Player.PlayerServer do
   use GenServer
   require Logger
 
+  alias SuperPoker.Table
   alias SuperPoker.GameServer.HeadsupTableServer, as: TableServerAPI
 
   defmodule State do
@@ -19,7 +20,12 @@ defmodule SuperPoker.Player.PlayerServer do
 
   # ================ 针对来自客户端的API ======================
   def start_player(username) do
-    DynamicSupervisor.start_child(SuperPoker.Player.PlayerSupervisor, {__MODULE__, username})
+    client = self()
+
+    DynamicSupervisor.start_child(
+      SuperPoker.Player.PlayerSupervisor,
+      {__MODULE__, [username, client]}
+    )
   end
 
   def join_table(username, table_id, buyin) do
@@ -35,6 +41,10 @@ defmodule SuperPoker.Player.PlayerServer do
   end
 
   # ================ 针对来自服务器端的API ====================
+  def notify_players_info(username, players_info) do
+    GenServer.call(via_tuple(username), {:notify_players_info, players_info})
+  end
+
   def notify_blind_bet(username, blinds) do
     GenServer.call(via_tuple(username), {:blind_bet, blinds})
   end
@@ -61,9 +71,9 @@ defmodule SuperPoker.Player.PlayerServer do
   end
 
   # ================ GenServer回调部分 =======================
-  def start_link(username) do
-    Logger.info("启动玩家 #{username} 进程")
-    GenServer.start_link(__MODULE__, username, name: via_tuple(username))
+  def start_link([username, client]) do
+    Logger.info("对于client=#{inspect(client)} 启动玩家 #{username} 进程")
+    GenServer.start_link(__MODULE__, [username, client], name: via_tuple(username))
   end
 
   defp via_tuple(username) do
@@ -71,10 +81,12 @@ defmodule SuperPoker.Player.PlayerServer do
   end
 
   @impl GenServer
-  def init(username) do
+  def init([username, client_pid]) do
     Process.flag(:trap_exit, true)
     log("对于玩家#{username}启动独立player进程")
-    {:ok, %State{username: username, state: :LOBBY}, {:continue, :load_user_info}}
+
+    {:ok, %State{username: username, clients: [client_pid], state: :LOBBY},
+     {:continue, :load_user_info}}
   end
 
   @impl GenServer
@@ -96,7 +108,7 @@ defmodule SuperPoker.Player.PlayerServer do
         _from,
         %State{username: username, total_chips: total_chips} = state
       ) do
-    case TableServerAPI.join_table(table_id, username) do
+    case Table.join_table(table_id, username) do
       :ok ->
         state = %State{
           state
@@ -133,6 +145,11 @@ defmodule SuperPoker.Player.PlayerServer do
   end
 
   # ===================== 来自服务器的请求回调 ====================
+  def handle_call({:notify_players_info, players_info}, _from, %State{clients: clients} = state) do
+    notify_player_clients(clients, {:players_info, players_info})
+    {:reply, :ok, state}
+  end
+
   def handle_call(
         {:blind_bet, blind_bet_info},
         _from,
@@ -199,6 +216,7 @@ defmodule SuperPoker.Player.PlayerServer do
   end
 
   # ============================ 这里多一层函数为把所有事件集中列出来，便于后续实现客户端 ================
+  # {:players_info, players_info}
   # {:blind_bet, my_chips_on_table_left, blind_bet_info}
   # {:hole_cards, my_hole_cards}
   # {:waiting_player, username}

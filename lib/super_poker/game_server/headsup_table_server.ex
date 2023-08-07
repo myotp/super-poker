@@ -114,11 +114,11 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
 
       {nil, _} ->
         p0 = %Player{pos: 0, username: username, chips: state.buyin, status: :JOINED}
-        {:reply, :ok, %State{state | p0: p0}}
+        {:reply, :ok, %State{state | p0: p0}, {:continue, :notify_players_info}}
 
       {_, nil} ->
         p1 = %Player{pos: 1, username: username, chips: state.buyin, status: :JOINED}
-        {:reply, :ok, %State{state | p1: p1}}
+        {:reply, :ok, %State{state | p1: p1}, {:continue, :notify_players_info}}
     end
   end
 
@@ -151,6 +151,17 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
   end
 
   @impl GenServer
+  def handle_continue(:notify_players_info, %State{player_mod: player} = state) do
+    players_info =
+      [state.p0, state.p1]
+      |> Enum.reject(&is_nil/1)
+      |> Enum.map(fn player -> Map.take(player, [:username, :chips, :status]) end)
+
+    all_players = players_info |> Enum.map(fn player -> player.username end)
+    player.notify_players_info(all_players, players_info)
+    {:noreply, state}
+  end
+
   def handle_continue(:maybe_start_game, state) do
     if all_players_ready?(state) do
       {:noreply, start_new_game(state), {:continue, :do_next_action}}

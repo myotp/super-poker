@@ -13,6 +13,7 @@ alias SuperPoker.GtoReport.AceKingReport
 alias SuperPoker.GameServer.TableSupervisor
 alias SuperPoker.GameServer.HeadsupTableServer
 alias SuperPoker.Player.PlayerServer
+alias SuperPoker.Player
 
 #
 dev_table_config = %{
