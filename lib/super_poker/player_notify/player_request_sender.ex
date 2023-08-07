@@ -18,6 +18,13 @@ defmodule SuperPoker.PlayerNotify.PlayerRequestSender do
     end)
   end
 
+  def notify_deal_cards(all_players, street, cards) do
+    # TODO: 发牌信息完成
+    Enum.each(all_players, fn player ->
+      IO.puts("通知玩家 #{player} 当前发牌轮 #{street} 发牌 #{inspect(cards)}")
+    end)
+  end
+
   # 一方fold，另一方自动获胜，不用比牌
   def notify_winner_result(all_players, winner, player_chips, nil) do
     Enum.each(all_players, fn player ->
@@ -44,12 +51,6 @@ defmodule SuperPoker.PlayerNotify.PlayerRequestSender do
        赢家 #{inspect(win5)} 输家 #{inspect(lose5)}
       大伙筹码更新 #{inspect(players_chips)}
       """)
-    end)
-  end
-
-  def notify_deal_cards(all_players, street, cards) do
-    Enum.each(all_players, fn player ->
-      IO.puts("通知玩家 #{player} 当前发牌轮 #{street} 发牌 #{inspect(cards)}")
     end)
   end
 end

@@ -285,7 +285,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
 
   @impl GenServer
   def handle_cast(:debug_state, state) do
-    log("牌桌状态 #{inspect(state)}")
+    IO.inspect(state, label: "牌桌状态")
     {:noreply, state}
   end
 
