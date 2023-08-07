@@ -45,7 +45,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
   end
 
   defp via_table_id(table_id) do
-    {:via, Registry, {SuperPoker.Multiplayer.TableRegistry, table_id}}
+    {:via, Registry, {SuperPoker.GameServer.TableRegistry, table_id}}
   end
 
   # ===================== 定义主体 %State{} 结构 =======================

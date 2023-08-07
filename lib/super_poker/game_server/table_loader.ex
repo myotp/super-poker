@@ -42,7 +42,7 @@ defmodule SuperPoker.GameServer.TableLoader do
         bb: 10,
         buyin: 500,
         table: SuperPoker.GameServer.HeadsupTableServer,
-        player: SuperPoker.Multiplayer.PlayerRequestSender,
+        player: SuperPoker.PlayerNotify.PlayerRequestSender,
         rules: SuperPoker.RulesEngine.SimpleRules1v1
       }
     ]

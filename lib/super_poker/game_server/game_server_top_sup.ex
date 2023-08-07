@@ -17,7 +17,7 @@ defmodule SuperPoker.GameServer.GameServerTopSup do
       SuperPoker.GameServer.TableSupervisor,
 
       # 牌桌ID注册registry
-      {Registry, [keys: :unique, name: SuperPoker.Multiplayer.TableRegistry]},
+      {Registry, [keys: :unique, name: SuperPoker.GameServer.TableRegistry]},
 
       # 实际触发DynamicSupervisor启动具体牌桌的进程
       SuperPoker.GameServer.TableStarter

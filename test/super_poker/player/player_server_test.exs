@@ -13,7 +13,7 @@ defmodule SuperPoker.Player.PlayerServerTest do
     buyin: 500,
     table: SuperPoker.GameServer.HeadsupTableServer,
     rules: SuperPoker.RulesEngine.SimpleRules1v1,
-    player: SuperPoker.Multiplayer.PlayerRequestSender
+    player: SuperPoker.PlayerNotify.PlayerRequestSender
   }
 
   describe "测试玩家进程PlayerServer与TableServer交互" do

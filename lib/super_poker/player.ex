@@ -1,6 +1,10 @@
+# 作为用户代理进程player_server部分的API封装模块
+# 请求一般来自于两个方向，一个是从客户端的具体操作
+# 另一个是来自牌桌的调用
 defmodule SuperPoker.Player do
   alias SuperPoker.Player.PlayerServer
 
+  #### ============== 来自玩家客户端的请求 ==================####
   def start_player(username) do
     PlayerServer.start_player(username)
   end
@@ -15,5 +19,24 @@ defmodule SuperPoker.Player do
 
   def player_action(username, action) do
     PlayerServer.player_action(username, action)
+  end
+
+  #### ============== 来自牌桌服务器的调用 ==================####
+  def notify_blind_bet(username, blinds) do
+    PlayerServer.notify_blind_bet(username, blinds)
+  end
+
+  def deal_hole_cards(username, hole_cards) do
+    PlayerServer.deal_hole_cards(username, hole_cards)
+  end
+
+  def notify_player_todo_actions(player, current_action_username, actions) do
+    PlayerServer.notify_player_todo_actions(player, current_action_username, actions)
+  end
+
+  # TODO: 通知show hands手牌
+
+  def notify_winner_result(player, winner, player_chips) do
+    PlayerServer.notify_winner_result(player, winner, player_chips)
   end
 end
