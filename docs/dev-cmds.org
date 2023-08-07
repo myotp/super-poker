@@ -1,0 +1,14 @@
+* 用PlayerRequestPrinter辅助开发
+iex -S mix
+
+TableSupervisor.start_table(%{dev_table_config | id: 9004})
+HeadsupTableServer.join_table(9004, "anna")
+HeadsupTableServer.join_table(9004, "bob")
+HeadsupTableServer.debug_state(9004)
+
+HeadsupTableServer.start_game(9004, "anna")
+HeadsupTableServer.start_game(9004, "bob")
+HeadsupTableServer.debug_state(9004)
+
+HeadsupTableServer.player_action_done(9004, "anna", :call)
+HeadsupTableServer.player_action_done(9004, "bob", :check)

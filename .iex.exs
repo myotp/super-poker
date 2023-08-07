@@ -10,5 +10,18 @@ alias SuperPoker.GtoReport.RankingProbabilityReport
 alias SuperPoker.GtoReport.AceKingReport
 
 # 多人游戏相关
-alias SuperPoker.Multiplayer.HeadsupTableServer
+alias SuperPoker.GameServer.TableSupervisor
+alias SuperPoker.GameServer.HeadsupTableServer
 alias SuperPoker.Player.PlayerServer
+
+#
+dev_table_config = %{
+  id: 1055,
+  max_players: 2,
+  sb: 5,
+  bb: 10,
+  buyin: 500,
+  table: SuperPoker.GameServer.HeadsupTableServer,
+  rules: SuperPoker.RulesEngine.SimpleRules1v1,
+  player: SuperPoker.PlayerNotify.PlayerRequestPrinter
+}
