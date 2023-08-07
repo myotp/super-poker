@@ -1,9 +1,9 @@
-defmodule SuperPoker.Multiplayer.PlayerServerTest do
+defmodule SuperPoker.Player.PlayerServerTest do
   use ExUnit.Case
 
   alias SuperPoker.Multiplayer.HeadsupTableServer
   alias SuperPoker.Multiplayer.TableSup
-  alias SuperPoker.Multiplayer.PlayerServer
+  alias SuperPoker.Player.PlayerServer
 
   @table_config %{
     id: 1001,

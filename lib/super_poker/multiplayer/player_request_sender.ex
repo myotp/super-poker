@@ -1,5 +1,5 @@
 defmodule SuperPoker.Multiplayer.PlayerRequestSender do
-  alias SuperPoker.Multiplayer.PlayerServer
+  alias SuperPoker.Player.PlayerServer
 
   def notify_blind_bet(all_players, blinds) do
     Enum.each(all_players, fn username ->
