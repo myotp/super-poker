@@ -77,6 +77,8 @@ defmodule SuperPoker.RulesEngine.SimpleRules1v1Test do
       amount_for_player_0_to_call = bb_amount - sb_amount
       player_0_force_sb_bet = sb_amount
       player_0_total_bet = 35 + amount_for_player_0_to_call + player_0_force_sb_bet
+      # 首先小盲注10, 补平call所需10, 额外raise35, 总共下注35
+      assert player_0_total_bet == 55
 
       # 小盲玩家加注之后，当前总共需要call的值就为小盲玩家到这里总下注值
       assert table.current_call_amount == player_0_total_bet
