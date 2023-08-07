@@ -1,8 +1,8 @@
-defmodule SuperPoker.Multiplayer.PlayerServer do
+defmodule SuperPoker.Player.PlayerServer do
   use GenServer
   require Logger
 
-  alias SuperPoker.Multiplayer.HeadsupTableServer, as: TableServerAPI
+  alias SuperPoker.GameServer.HeadsupTableServer, as: TableServerAPI
 
   defmodule State do
     defstruct [
@@ -19,7 +19,7 @@ defmodule SuperPoker.Multiplayer.PlayerServer do
 
   # ================ 针对来自客户端的API ======================
   def start_player(username) do
-    DynamicSupervisor.start_child(SuperPoker.Multiplayer.PlayerSup, {__MODULE__, username})
+    DynamicSupervisor.start_child(SuperPoker.Player.PlayerSupervisor, {__MODULE__, username})
   end
 
   def join_table(username, table_id, buyin) do
@@ -67,7 +67,7 @@ defmodule SuperPoker.Multiplayer.PlayerServer do
   end
 
   defp via_tuple(username) do
-    {:via, Registry, {SuperPoker.Multiplayer.PlayerRegistry, username}}
+    {:via, Registry, {SuperPoker.Player.PlayerRegistry, username}}
   end
 
   @impl GenServer

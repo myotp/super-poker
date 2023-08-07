@@ -1,26 +1,25 @@
-defmodule SuperPoker.Multiplayer.PlayerRequestSender do
-  alias SuperPoker.Multiplayer.PlayerServer
-
+# 这个模块用来辅助开发调试阶段使用，可以打印输入内容，方便开发调试
+defmodule SuperPoker.PlayerNotify.PlayerRequestPrinter do
   def notify_blind_bet(all_players, blinds) do
-    Enum.each(all_players, fn username ->
-      PlayerServer.notify_blind_bet(username, blinds)
+    Enum.each(all_players, fn player ->
+      IO.puts("通知玩家 #{player} 大小盲 #{inspect(blinds)}")
     end)
   end
 
-  def deal_hole_cards(username, hole_cards) do
-    PlayerServer.deal_hole_cards(username, hole_cards)
+  def deal_hole_cards(username, cards) do
+    IO.puts("通知玩家 #{username} 发到手牌 #{inspect(cards)}")
   end
 
   def notify_player_action(all_players, current_action_username, actions) do
     Enum.each(all_players, fn player ->
-      PlayerServer.notify_player_todo_actions(player, current_action_username, actions)
+      IO.puts("通知玩家 #{player} 当前等待 #{current_action_username} 可选操作 #{inspect(actions)}")
     end)
   end
 
   # 一方fold，另一方自动获胜，不用比牌
   def notify_winner_result(all_players, winner, player_chips, nil) do
     Enum.each(all_players, fn player ->
-      PlayerServer.notify_winner_result(player, winner, player_chips)
+      IO.puts("通知玩家 #{player} 赢家为 #{winner} 大伙筹码更新 #{inspect(player_chips)}")
     end)
   end
 

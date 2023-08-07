@@ -1,5 +1,5 @@
 # 这个模块用来最终安静执行测试用的
-defmodule SuperPoker.Multiplayer.PlayerRequestNull do
+defmodule SuperPoker.PlayerNotify.PlayerRequestNull do
   def notify_blind_bet(_all_players, _blinds), do: :ok
   def deal_hole_cards(_username, _cards), do: :ok
   def notify_player_action(_all_players, _current_action_username, _actions), do: :ok

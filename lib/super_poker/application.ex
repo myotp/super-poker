@@ -18,7 +18,11 @@ defmodule SuperPoker.Application do
       SuperPokerWeb.Endpoint,
       # Start a worker by calling: SuperPoker.Worker.start_link(arg)
       # {SuperPoker.Worker, arg}
-      SuperPoker.Multiplayer.MultiplayerSup
+
+      # 牌桌控制部分
+      SuperPoker.GameServer.GameServerTopSup,
+      # 玩家控制部分
+      SuperPoker.Player.PlayerTopSup
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

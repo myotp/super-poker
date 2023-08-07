@@ -1,4 +1,4 @@
-defmodule SuperPoker.Multiplayer.TableSup do
+defmodule SuperPoker.GameServer.TableSupervisor do
   use DynamicSupervisor
   require Logger
 

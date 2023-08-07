@@ -1,10 +1,10 @@
 # TODO: 明确了通过username的话，就可以定义dummy版本，方便测试了，研究后续到底该咋测试
 # TODO: 我现在直接用默认的1001的话，会有所冲突，每个建新的话，如何后继前边的状态呢
 # TODO: 尽管有Emacs可以方便插入代码到shell，还是尽量不要那么用，而是通过测试，把代码攒出来
-defmodule SuperPoker.Multiplayer.HeadsupTableServerTest do
+defmodule SuperPoker.GameServer.HeadsupTableServerTest do
   use ExUnit.Case, async: false
-  alias SuperPoker.Multiplayer.HeadsupTableServer
-  alias SuperPoker.Multiplayer.TableSup
+  alias SuperPoker.GameServer.HeadsupTableServer
+  alias SuperPoker.GameServer.TableSupervisor
 
   @table_config %{
     id: 1001,
@@ -12,14 +12,14 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServerTest do
     sb: 5,
     bb: 10,
     buyin: 500,
-    table: SuperPoker.Multiplayer.HeadsupTableServer,
+    table: SuperPoker.GameServer.HeadsupTableServer,
     rules: SuperPoker.RulesEngine.SimpleRules1v1,
-    player: SuperPoker.Multiplayer.PlayerRequestNull
+    player: SuperPoker.PlayerNotify.PlayerRequestNull
   }
 
   describe "单挑牌桌测试" do
     test "最多只能两个玩家加入" do
-      TableSup.start_table(%{@table_config | id: 9001})
+      TableSupervisor.start_table(%{@table_config | id: 9001})
       s = HeadsupTableServer.get_state(9001)
       assert s.p0 == nil
       assert s.p1 == nil
@@ -39,7 +39,7 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServerTest do
     end
 
     test "玩家开始牌局" do
-      TableSup.start_table(%{@table_config | id: 9002})
+      TableSupervisor.start_table(%{@table_config | id: 9002})
       HeadsupTableServer.join_table(9002, "anna")
       HeadsupTableServer.join_table(9002, "bob")
 
@@ -58,7 +58,7 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServerTest do
     end
 
     test "简单一方fold迅速完整完成一局对战并验证筹码更新" do
-      TableSup.start_table(%{@table_config | id: 9003})
+      TableSupervisor.start_table(%{@table_config | id: 9003})
       HeadsupTableServer.join_table(9003, "anna")
       HeadsupTableServer.join_table(9003, "bob")
       HeadsupTableServer.start_game(9003, "anna")
@@ -77,7 +77,7 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServerTest do
 
     @tag :wip
     test "普通call以及check验证后续发牌轮" do
-      TableSup.start_table(%{@table_config | id: 9004})
+      TableSupervisor.start_table(%{@table_config | id: 9004})
       HeadsupTableServer.join_table(9004, "anna")
       HeadsupTableServer.join_table(9004, "bob")
       HeadsupTableServer.start_game(9004, "anna")
@@ -116,7 +116,7 @@ defmodule SuperPoker.Multiplayer.HeadsupTableServerTest do
     end
 
     test "发牌流程测试" do
-      TableSup.start_table(%{@table_config | id: 9005})
+      TableSupervisor.start_table(%{@table_config | id: 9005})
       HeadsupTableServer.join_table(9005, "anna")
       HeadsupTableServer.join_table(9005, "bob")
       HeadsupTableServer.start_game(9005, "anna")
