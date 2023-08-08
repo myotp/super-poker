@@ -41,8 +41,9 @@ defmodule SuperPoker.Player.PlayerServer do
   end
 
   # ================ 针对来自服务器端的API ====================
+  # 通知客户端用异步形式，因为玩家join_table或者start_game都在同步调用中
   def notify_players_info(username, players_info) do
-    GenServer.call(via_tuple(username), {:notify_players_info, players_info})
+    GenServer.cast(via_tuple(username), {:notify_players_info, players_info})
   end
 
   def notify_blind_bet(username, blinds) do
@@ -101,6 +102,11 @@ defmodule SuperPoker.Player.PlayerServer do
     {:noreply, state}
   end
 
+  def handle_cast({:notify_players_info, players_info}, %State{clients: clients} = state) do
+    notify_player_clients(clients, {:players_info, players_info})
+    {:noreply, state}
+  end
+
   @impl GenServer
   # ========= 来自客户端方面的请求回调 ==============
   def handle_call(
@@ -145,11 +151,6 @@ defmodule SuperPoker.Player.PlayerServer do
   end
 
   # ===================== 来自服务器的请求回调 ====================
-  def handle_call({:notify_players_info, players_info}, _from, %State{clients: clients} = state) do
-    notify_player_clients(clients, {:players_info, players_info})
-    {:reply, :ok, state}
-  end
-
   def handle_call(
         {:blind_bet, blind_bet_info},
         _from,

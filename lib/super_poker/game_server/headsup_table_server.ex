@@ -114,11 +114,15 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
 
       {nil, _} ->
         p0 = %Player{pos: 0, username: username, chips: state.buyin, status: :JOINED}
-        {:reply, :ok, %State{state | p0: p0}, {:continue, :notify_players_info}}
+        state = %State{state | p0: p0}
+        notify_players_info(state)
+        {:reply, :ok, state}
 
       {_, nil} ->
         p1 = %Player{pos: 1, username: username, chips: state.buyin, status: :JOINED}
-        {:reply, :ok, %State{state | p1: p1}, {:continue, :notify_players_info}}
+        state = %State{state | p1: p1}
+        notify_players_info(state)
+        {:reply, :ok, state}
     end
   end
 
@@ -132,6 +136,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
           put_in(state.p1.status, :READY)
       end
 
+    notify_players_info(state)
     {:reply, :ok, state, {:continue, :maybe_start_game}}
   end
 
@@ -151,17 +156,6 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
   end
 
   @impl GenServer
-  def handle_continue(:notify_players_info, %State{player_mod: player} = state) do
-    players_info =
-      [state.p0, state.p1]
-      |> Enum.reject(&is_nil/1)
-      |> Enum.map(fn player -> Map.take(player, [:username, :chips, :status]) end)
-
-    all_players = players_info |> Enum.map(fn player -> player.username end)
-    player.notify_players_info(all_players, players_info)
-    {:noreply, state}
-  end
-
   def handle_continue(:maybe_start_game, state) do
     if all_players_ready?(state) do
       {:noreply, start_new_game(state), {:continue, :do_next_action}}
@@ -301,6 +295,16 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
   end
 
   # =================== 基于%State{} 的大操作函数 =====
+  defp notify_players_info(%State{player_mod: player} = state) do
+    players_info =
+      [state.p0, state.p1]
+      |> Enum.reject(&is_nil/1)
+      |> Enum.map(fn player -> Map.take(player, [:username, :chips, :status]) end)
+
+    all_players = players_info |> Enum.map(fn player -> player.username end)
+    player.notify_players_info(all_players, players_info)
+  end
+
   defp start_new_game(%State{rules_mod: rules_mod, sb_amount: sb, bb_amount: bb} = state) do
     players_data = generate_players_data_for_rules_engine(state)
     table = rules_mod.new(players_data, state.button_pos, {sb, bb})
