@@ -7,9 +7,9 @@ defmodule SuperPoker.PlayerNotify.PlayerRequestSender do
     end)
   end
 
-  def notify_blind_bet(all_players, blinds) do
+  def notify_bets_info(all_players, blinds) do
     Enum.each(all_players, fn username ->
-      Player.notify_blind_bet(username, blinds)
+      Player.notify_bets_info(username, blinds)
     end)
   end
 

@@ -14,6 +14,10 @@ HeadsupTableServer.player_action_done(9004, "anna", :call)
 HeadsupTableServer.player_action_done(9004, "bob", :check)
 
 * LiveView客户端自顶向下开发
+# LV玩家加入
+http://localhost:4000/table
+
+# 命令行玩家加入
 Player.start_player("anna")
 Player.join_table("anna", 1001, 500)
 Player.start_game("anna")

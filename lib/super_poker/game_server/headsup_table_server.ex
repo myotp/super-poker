@@ -75,7 +75,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
   end
 
   defmodule Player do
-    defstruct [:pos, :username, :chips, :status]
+    defstruct [:pos, :username, :chips, :current_street_bet, :status]
   end
 
   # ===================== OTP 回调部分 =================================
@@ -130,9 +130,11 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
     state =
       case {state.p0.username, state.p1.username} do
         {^username, _} ->
+          put_in(state.p0.current_street_bet, 0)
           put_in(state.p0.status, :READY)
 
         {_, ^username} ->
+          put_in(state.p1.current_street_bet, 0)
           put_in(state.p1.status, :READY)
       end
 
@@ -169,13 +171,32 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
         %State{table: %{next_action: {:table, {:notify_blind_bet, blinds}}}, player_mod: player} =
           state
       ) do
-    blinds =
-      blinds
-      |> Enum.map(fn {pos, amount} -> {pos_to_username(state, pos), amount} end)
-      |> Map.new()
+    # blinds =
+    #   blinds
+    #   |> Enum.map(fn {pos, amount} -> {pos_to_username(state, pos), amount} end)
+    #   |> Map.new()
 
-    log("blinds: #{inspect(blinds)}")
-    player.notify_blind_bet(all_players(state), blinds)
+    p0 = pos_to_username(state, 0)
+    p1 = pos_to_username(state, 1)
+
+    p0_chips_left = state.p0.chips - blinds[0]
+    p1_chips_left = state.p1.chips - blinds[1]
+
+    bets_info =
+      %{
+        :pot => 0,
+        p0 => %{chips_left: p0_chips_left, current_street_bet: blinds[0]},
+        p1 => %{chips_left: p1_chips_left, current_street_bet: blinds[1]}
+      }
+
+    put_in(state.p0.chips, p0_chips_left)
+    put_in(state.p0.current_street_bet, blinds[0])
+    put_in(state.p1.chips, p1_chips_left)
+    put_in(state.p1.current_street_bet, blinds[1])
+
+    # FIXME: 这里, 之后应该不用特别特殊化处理, 可以盲注也当作一般情况更新就好
+    log("blinds: #{inspect(bets_info)}")
+    player.notify_bets_info(all_players(state), bets_info)
     {:noreply, state, {:continue, :notify_blind_bet_done}}
   end
 

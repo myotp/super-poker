@@ -46,8 +46,8 @@ defmodule SuperPoker.Player.PlayerServer do
     GenServer.cast(via_tuple(username), {:notify_players_info, players_info})
   end
 
-  def notify_blind_bet(username, blinds) do
-    GenServer.call(via_tuple(username), {:blind_bet, blinds})
+  def notify_bets_info(username, blinds) do
+    GenServer.call(via_tuple(username), {:bets_info, blinds})
   end
 
   def deal_hole_cards(username, hole_cards) do
@@ -152,14 +152,15 @@ defmodule SuperPoker.Player.PlayerServer do
 
   # ===================== 来自服务器的请求回调 ====================
   def handle_call(
-        {:blind_bet, blind_bet_info},
+        {:bets_info, bets_info},
         _from,
-        %State{username: username, chips_on_table: chips_on_table, clients: clients} = state
+        %State{username: username, chips_on_table: _chips_on_table, clients: clients} = state
       ) do
-    my_blind_bet = Map.get(blind_bet_info, username, 0)
-    chips_left = chips_on_table - my_blind_bet
-    notify_player_clients(clients, {:blind_bet, chips_left, blind_bet_info})
-    {:reply, :ok, %State{state | chips_on_table: chips_left}}
+    # TODO: 这里似乎可以直接把整个bets信息丢给后续了就,每个人的每条街累计下注与总的筹码数量都应该正确显示出来后续
+    total = bets_info[username].chips_left
+    IO.inspect(total, label: "玩家剩余筹码数量为")
+    notify_player_clients(clients, {:update_bets, bets_info})
+    {:reply, :ok, %State{state | chips_on_table: total}}
   end
 
   def handle_call({:deal_hole_cards, hole_cards}, _from, %State{clients: clients} = state) do
@@ -218,7 +219,11 @@ defmodule SuperPoker.Player.PlayerServer do
 
   # ============================ 这里多一层函数为把所有事件集中列出来，便于后续实现客户端 ================
   # {:players_info, players_info}
+
   # {:blind_bet, my_chips_on_table_left, blind_bet_info}
+  # 变更为, 这样, 可以响应后续牌局每次的下注变化通知情况
+  # {:update_bets, bets_info}
+
   # {:hole_cards, my_hole_cards}
   # {:waiting_player, username}
   # {:bet_actions, actions}

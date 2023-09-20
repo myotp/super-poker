@@ -20,6 +20,8 @@ defmodule SuperPokerWeb.TableLive do
       |> assign(username: @username)
       |> assign(me: nil)
       |> assign(oppo: nil)
+      |> assign(in_gaming: false)
+      |> assign(bets_info: %{})
 
     {:ok, socket}
   end
@@ -27,26 +29,46 @@ defmodule SuperPokerWeb.TableLive do
   def render(assigns) do
     ~H"""
     <h1>Hello, game</h1>
-    <div class="players_info">
-      <div class="player">
-        <%= if @me do %>
-          <%= @me.username %> <%= @me.chips %> <%= @me.status %>
-        <% else %>
-          等待中...
-        <% end %>
+    <div id="poker-game-table">
+      <div class="players_info">
+        <div class="player">
+          <%= if @me do %>
+            <%= @me.username %> <%= @me.chips %> <%= @me.status %>
+          <% else %>
+            等待中...
+          <% end %>
+        </div>
+
+        <div class="player">
+          <%= if @oppo do %>
+            <%= @oppo.username %> <%= @oppo.chips %> <%= @oppo.status %>
+          <% else %>
+            等待中...
+          <% end %>
+        </div>
+      </div>
+      <div class="start-game-button">
+        <button phx-click="start-game">Start Game</button>
+      </div>
+    </div>
+
+    <%= if @in_gaming do %>
+      <div>
+        POT: 0
       </div>
 
-      <div class="player">
-        <%= if @oppo do %>
-          <%= @oppo.username %> <%= @oppo.chips %> <%= @oppo.status %>
-        <% else %>
-          等待中...
-        <% end %>
+      <div>
+        <%= @me.username %> 当前街: <%= @bets_info[@me.username].current_street_bet %> 总剩余: <%= @bets_info[
+          @me.username
+        ].chips_left %>
       </div>
-    </div>
-    <div class="table_actions">
-      <button phx-click="start-game">Start Game</button>
-    </div>
+
+      <div>
+        <%= @oppo.username %> 当前街: <%= @bets_info[@oppo.username].current_street_bet %> 总剩余: <%= @bets_info[
+          @oppo.username
+        ].chips_left %>
+      </div>
+    <% end %>
     """
   end
 
@@ -58,6 +80,17 @@ defmodule SuperPokerWeb.TableLive do
   def handle_info({:players_info, players_info}, socket) do
     IO.inspect(players_info, label: "LiveView收到玩家信息更新")
     socket = update_players_info(socket, players_info)
+    {:noreply, socket}
+  end
+
+  def handle_info({:update_bets, bets_info}, socket) do
+    IO.inspect(bets_info, label: "收到下注更新信息")
+
+    socket =
+      socket
+      |> assign(:in_gaming, true)
+      |> assign(:bets_info, bets_info)
+
     {:noreply, socket}
   end
 
