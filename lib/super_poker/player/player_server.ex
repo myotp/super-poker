@@ -140,6 +140,8 @@ defmodule SuperPoker.Player.PlayerServer do
         _from,
         %State{table_id: table_id, username: username, bet_actions: bet_actions} = state
       ) do
+    IO.puts("==player_server== user[#{username}] action: #{inspect(action)}")
+
     case valid_player_action?(action, bet_actions) do
       true ->
         TableServerAPI.player_action_done(table_id, username, action)
@@ -164,7 +166,7 @@ defmodule SuperPoker.Player.PlayerServer do
   end
 
   def handle_call({:deal_hole_cards, hole_cards}, _from, %State{clients: clients} = state) do
-    notify_player_clients(clients, {:hold_cards, hole_cards})
+    notify_player_clients(clients, {:hole_cards, hole_cards})
     {:reply, :ok, %State{state | hole_cards: hole_cards}}
   end
 

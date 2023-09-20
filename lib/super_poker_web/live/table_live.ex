@@ -22,6 +22,7 @@ defmodule SuperPokerWeb.TableLive do
       |> assign(oppo: nil)
       |> assign(in_gaming: false)
       |> assign(bets_info: %{})
+      |> assign(hole_cards: [])
 
     {:ok, socket}
   end
@@ -68,6 +69,24 @@ defmodule SuperPokerWeb.TableLive do
           @oppo.username
         ].chips_left %>
       </div>
+
+      <%!-- FIXME: 这里不能嵌套if吗
+       <%= if @hole_cards != [] %>
+          我的手牌<%= @hole_cards %>
+      <% end %> --%>
+      <div>
+        我的手牌 <%= inspect(@hole_cards) %>
+      </div>
+
+      <div class="game-action-button">
+        <button phx-click="game-action-fold">fold</button>
+      </div>
+      <div class="game-action-button">
+        <button phx-click="game-action-call">call</button>
+      </div>
+      <div class="game-action-button">
+        <button phx-click="game-action-raise">raise</button>
+      </div>
     <% end %>
     """
   end
@@ -76,6 +95,13 @@ defmodule SuperPokerWeb.TableLive do
     Player.start_game(@username)
     {:noreply, socket}
   end
+
+  def handle_event("game-action-fold", _, socket) do
+    Player.player_action(my_username(socket), :fold)
+    {:noreply, socket}
+  end
+
+  defp my_username(socket), do: socket.assigns.username
 
   def handle_info({:players_info, players_info}, socket) do
     IO.inspect(players_info, label: "LiveView收到玩家信息更新")
@@ -91,6 +117,11 @@ defmodule SuperPokerWeb.TableLive do
       |> assign(:in_gaming, true)
       |> assign(:bets_info, bets_info)
 
+    {:noreply, socket}
+  end
+
+  def handle_info({:hole_cards, cards}, socket) do
+    socket = assign(socket, :hole_cards, cards)
     {:noreply, socket}
   end
 
