@@ -14,6 +14,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServerTest do
     buyin: 500,
     table: SuperPoker.GameServer.HeadsupTableServer,
     rules: SuperPoker.RulesEngine.SimpleRules1v1,
+    # FIXME, 这里，不应该定义这种NULL的东西, 而是应该mox并确认被调用到的函数正确参数才对
     player: SuperPoker.PlayerNotify.PlayerRequestNull
   }
 
@@ -75,7 +76,6 @@ defmodule SuperPoker.GameServer.HeadsupTableServerTest do
       assert s.table_status == :WAITING
     end
 
-    @tag :wip
     test "普通call以及check验证后续发牌轮" do
       TableSupervisor.start_table(%{@table_config | id: 9004})
       HeadsupTableServer.join_table(9004, "anna")

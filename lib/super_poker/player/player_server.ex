@@ -2,6 +2,7 @@ defmodule SuperPoker.Player.PlayerServer do
   use GenServer
   require Logger
 
+  alias SuperPoker.Table
   alias SuperPoker.GameServer.HeadsupTableServer, as: TableServerAPI
 
   defmodule State do
@@ -19,7 +20,12 @@ defmodule SuperPoker.Player.PlayerServer do
 
   # ================ 针对来自客户端的API ======================
   def start_player(username) do
-    DynamicSupervisor.start_child(SuperPoker.Player.PlayerSupervisor, {__MODULE__, username})
+    client = self()
+
+    DynamicSupervisor.start_child(
+      SuperPoker.Player.PlayerSupervisor,
+      {__MODULE__, [username, client]}
+    )
   end
 
   def join_table(username, table_id, buyin) do
@@ -35,8 +41,13 @@ defmodule SuperPoker.Player.PlayerServer do
   end
 
   # ================ 针对来自服务器端的API ====================
-  def notify_blind_bet(username, blinds) do
-    GenServer.call(via_tuple(username), {:blind_bet, blinds})
+  # 通知客户端用异步形式，因为玩家join_table或者start_game都在同步调用中
+  def notify_players_info(username, players_info) do
+    GenServer.cast(via_tuple(username), {:notify_players_info, players_info})
+  end
+
+  def notify_bets_info(username, blinds) do
+    GenServer.call(via_tuple(username), {:bets_info, blinds})
   end
 
   def deal_hole_cards(username, hole_cards) do
@@ -61,9 +72,9 @@ defmodule SuperPoker.Player.PlayerServer do
   end
 
   # ================ GenServer回调部分 =======================
-  def start_link(username) do
-    Logger.info("启动玩家 #{username} 进程")
-    GenServer.start_link(__MODULE__, username, name: via_tuple(username))
+  def start_link([username, client]) do
+    Logger.info("对于client=#{inspect(client)} 启动玩家 #{username} 进程")
+    GenServer.start_link(__MODULE__, [username, client], name: via_tuple(username))
   end
 
   defp via_tuple(username) do
@@ -71,10 +82,12 @@ defmodule SuperPoker.Player.PlayerServer do
   end
 
   @impl GenServer
-  def init(username) do
+  def init([username, client_pid]) do
     Process.flag(:trap_exit, true)
     log("对于玩家#{username}启动独立player进程")
-    {:ok, %State{username: username, state: :LOBBY}, {:continue, :load_user_info}}
+
+    {:ok, %State{username: username, clients: [client_pid], state: :LOBBY},
+     {:continue, :load_user_info}}
   end
 
   @impl GenServer
@@ -89,6 +102,11 @@ defmodule SuperPoker.Player.PlayerServer do
     {:noreply, state}
   end
 
+  def handle_cast({:notify_players_info, players_info}, %State{clients: clients} = state) do
+    notify_player_clients(clients, {:players_info, players_info})
+    {:noreply, state}
+  end
+
   @impl GenServer
   # ========= 来自客户端方面的请求回调 ==============
   def handle_call(
@@ -96,7 +114,7 @@ defmodule SuperPoker.Player.PlayerServer do
         _from,
         %State{username: username, total_chips: total_chips} = state
       ) do
-    case TableServerAPI.join_table(table_id, username) do
+    case Table.join_table(table_id, username) do
       :ok ->
         state = %State{
           state
@@ -122,6 +140,8 @@ defmodule SuperPoker.Player.PlayerServer do
         _from,
         %State{table_id: table_id, username: username, bet_actions: bet_actions} = state
       ) do
+    IO.puts("==player_server== user[#{username}] action: #{inspect(action)}")
+
     case valid_player_action?(action, bet_actions) do
       true ->
         TableServerAPI.player_action_done(table_id, username, action)
@@ -134,18 +154,19 @@ defmodule SuperPoker.Player.PlayerServer do
 
   # ===================== 来自服务器的请求回调 ====================
   def handle_call(
-        {:blind_bet, blind_bet_info},
+        {:bets_info, bets_info},
         _from,
-        %State{username: username, chips_on_table: chips_on_table, clients: clients} = state
+        %State{username: username, chips_on_table: _chips_on_table, clients: clients} = state
       ) do
-    my_blind_bet = Map.get(blind_bet_info, username, 0)
-    chips_left = chips_on_table - my_blind_bet
-    notify_player_clients(clients, {:blind_bet, chips_left, blind_bet_info})
-    {:reply, :ok, %State{state | chips_on_table: chips_left}}
+    # TODO: 这里似乎可以直接把整个bets信息丢给后续了就,每个人的每条街累计下注与总的筹码数量都应该正确显示出来后续
+    total = bets_info[username].chips_left
+    IO.inspect(total, label: "玩家剩余筹码数量为")
+    notify_player_clients(clients, {:update_bets, bets_info})
+    {:reply, :ok, %State{state | chips_on_table: total}}
   end
 
   def handle_call({:deal_hole_cards, hole_cards}, _from, %State{clients: clients} = state) do
-    notify_player_clients(clients, {:hold_cards, hole_cards})
+    notify_player_clients(clients, {:hole_cards, hole_cards})
     {:reply, :ok, %State{state | hole_cards: hole_cards}}
   end
 
@@ -199,7 +220,12 @@ defmodule SuperPoker.Player.PlayerServer do
   end
 
   # ============================ 这里多一层函数为把所有事件集中列出来，便于后续实现客户端 ================
+  # {:players_info, players_info}
+
   # {:blind_bet, my_chips_on_table_left, blind_bet_info}
+  # 变更为, 这样, 可以响应后续牌局每次的下注变化通知情况
+  # {:update_bets, bets_info}
+
   # {:hole_cards, my_hole_cards}
   # {:waiting_player, username}
   # {:bet_actions, actions}

@@ -75,7 +75,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
   end
 
   defmodule Player do
-    defstruct [:pos, :username, :chips, :status]
+    defstruct [:pos, :username, :chips, :current_street_bet, :status]
   end
 
   # ===================== OTP 回调部分 =================================
@@ -114,11 +114,15 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
 
       {nil, _} ->
         p0 = %Player{pos: 0, username: username, chips: state.buyin, status: :JOINED}
-        {:reply, :ok, %State{state | p0: p0}}
+        state = %State{state | p0: p0}
+        notify_players_info(state)
+        {:reply, :ok, state}
 
       {_, nil} ->
         p1 = %Player{pos: 1, username: username, chips: state.buyin, status: :JOINED}
-        {:reply, :ok, %State{state | p1: p1}}
+        state = %State{state | p1: p1}
+        notify_players_info(state)
+        {:reply, :ok, state}
     end
   end
 
@@ -126,12 +130,15 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
     state =
       case {state.p0.username, state.p1.username} do
         {^username, _} ->
+          put_in(state.p0.current_street_bet, 0)
           put_in(state.p0.status, :READY)
 
         {_, ^username} ->
+          put_in(state.p1.current_street_bet, 0)
           put_in(state.p1.status, :READY)
       end
 
+    notify_players_info(state)
     {:reply, :ok, state, {:continue, :maybe_start_game}}
   end
 
@@ -164,13 +171,32 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
         %State{table: %{next_action: {:table, {:notify_blind_bet, blinds}}}, player_mod: player} =
           state
       ) do
-    blinds =
-      blinds
-      |> Enum.map(fn {pos, amount} -> {pos_to_username(state, pos), amount} end)
-      |> Map.new()
+    # blinds =
+    #   blinds
+    #   |> Enum.map(fn {pos, amount} -> {pos_to_username(state, pos), amount} end)
+    #   |> Map.new()
 
-    log("blinds: #{inspect(blinds)}")
-    player.notify_blind_bet(all_players(state), blinds)
+    p0 = pos_to_username(state, 0)
+    p1 = pos_to_username(state, 1)
+
+    p0_chips_left = state.p0.chips - blinds[0]
+    p1_chips_left = state.p1.chips - blinds[1]
+
+    bets_info =
+      %{
+        :pot => 0,
+        p0 => %{chips_left: p0_chips_left, current_street_bet: blinds[0]},
+        p1 => %{chips_left: p1_chips_left, current_street_bet: blinds[1]}
+      }
+
+    put_in(state.p0.chips, p0_chips_left)
+    put_in(state.p0.current_street_bet, blinds[0])
+    put_in(state.p1.chips, p1_chips_left)
+    put_in(state.p1.current_street_bet, blinds[1])
+
+    # FIXME: 这里, 之后应该不用特别特殊化处理, 可以盲注也当作一般情况更新就好
+    log("blinds: #{inspect(bets_info)}")
+    player.notify_bets_info(all_players(state), bets_info)
     {:noreply, state, {:continue, :notify_blind_bet_done}}
   end
 
@@ -252,6 +278,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
     player.notify_winner_result(all_players(state), username, players_chips, nil)
     state = put_in(state.p0.chips, players_chips[0])
     state = put_in(state.p1.chips, players_chips[1])
+    # TODO: 更新筹码信息发送给客户端
     state = put_in(state.p0.status, :JOINED)
     state = put_in(state.p1.status, :JOINED)
     {:noreply, %State{state | table_status: :WAITING}}
@@ -290,6 +317,16 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
   end
 
   # =================== 基于%State{} 的大操作函数 =====
+  defp notify_players_info(%State{player_mod: player} = state) do
+    players_info =
+      [state.p0, state.p1]
+      |> Enum.reject(&is_nil/1)
+      |> Enum.map(fn player -> Map.take(player, [:username, :chips, :status]) end)
+
+    all_players = players_info |> Enum.map(fn player -> player.username end)
+    player.notify_players_info(all_players, players_info)
+  end
+
   defp start_new_game(%State{rules_mod: rules_mod, sb_amount: sb, bb_amount: bb} = state) do
     players_data = generate_players_data_for_rules_engine(state)
     table = rules_mod.new(players_data, state.button_pos, {sb, bb})

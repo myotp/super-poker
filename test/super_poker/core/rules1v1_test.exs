@@ -44,7 +44,6 @@ defmodule SuperPoker.Core.Rules1v1Test do
       assert rules.pot == 0
     end
 
-    @tag :wip
     test "只有两个玩家的情况下，从小盲也就是button处开始" do
       rules = Rules1v1.new([{0, 100}, {1, 100}], 0, {10, 20})
       assert {:player, 0, [{:call, 10}, {:raise, _}]} = rules.next_action
