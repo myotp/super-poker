@@ -125,6 +125,12 @@ defmodule SuperPokerWeb.TableLive do
     {:noreply, socket}
   end
 
+  def handle_info({:winner, winner}, socket) do
+    IO.inspect(winner, label: "赢家")
+    socket = assign(socket, in_gaming: false)
+    {:noreply, socket}
+  end
+
   def handle_info(msg, socket) do
     IO.inspect(msg, label: "========>>>>> TODO")
     {:noreply, socket}

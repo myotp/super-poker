@@ -278,6 +278,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
     player.notify_winner_result(all_players(state), username, players_chips, nil)
     state = put_in(state.p0.chips, players_chips[0])
     state = put_in(state.p1.chips, players_chips[1])
+    # TODO: 更新筹码信息发送给客户端
     state = put_in(state.p0.status, :JOINED)
     state = put_in(state.p1.status, :JOINED)
     {:noreply, %State{state | table_status: :WAITING}}

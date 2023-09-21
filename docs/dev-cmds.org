@@ -22,3 +22,9 @@ Player.start_player("anna")
 Player.join_table("anna", 1001, 500)
 Player.start_game("anna")
 HeadsupTableServer.debug_state(1001)
+
+# TODO
+# 网页端fold，处理正确的结果，fold不展示对手牌，其它情况输的时候，展示对手牌
+
+* TODO
+- HeadsupTableServerTest当中，不应该用PlayerRequestNull，而是应该mox从而可以确保调用的正确
