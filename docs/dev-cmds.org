@@ -31,3 +31,10 @@ HeadsupTableServer.debug_state(1001)
 - 测试的方面，对于OTP进程的复杂一点的测试
 - LiveView客户端的实现，显示具体扑克牌，更多操作，更合理的页面规划，等等，完成一个基本可用的简单客户端
 - LiveView方面，测试LiveView
+- 后续跟随pragmaticstudio课程融入更多LiveView内容到客户端
+
+收到下注更新信息: %{
+  :pot => 0,
+  "anna" => %{chips_left: 490, current_street_bet: 10},
+  "lv-client" => %{chips_left: 495, current_street_bet: 5}
+}

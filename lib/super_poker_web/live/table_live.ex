@@ -4,7 +4,7 @@ defmodule SuperPokerWeb.TableLive do
   alias SuperPoker.Player
 
   # FIXME: 从/login页面通过session传过来
-  @username "lv-client"
+  @username "lvcas"
 
   def mount(_, _, socket) do
     IO.inspect(self(), label: "MOUNT <PID>")
@@ -18,11 +18,16 @@ defmodule SuperPokerWeb.TableLive do
     socket =
       socket
       |> assign(username: @username)
-      |> assign(me: nil)
-      |> assign(oppo: nil)
+      |> assign(pot: 0)
       |> assign(in_gaming: false)
-      |> assign(bets_info: %{})
-      |> assign(hole_cards: [])
+      |> assign(my_username: @username)
+      |> assign(oppo_username: "WAITING")
+      |> assign(my_chips_left: 500)
+      |> assign(oppo_chips_left: 0)
+      |> assign(my_bet: 0)
+      |> assign(oppo_bet: 0)
+      |> assign(my_hole_cards: [])
+      |> assign(oppo_hole_cards: [])
 
     {:ok, socket}
   end
@@ -30,62 +35,53 @@ defmodule SuperPokerWeb.TableLive do
   def render(assigns) do
     ~H"""
     <h1>Hello, game</h1>
-    <div id="poker-game-table">
-      <div class="players_info">
-        <div class="player">
-          <%= if @me do %>
-            <%= @me.username %> <%= @me.chips %> <%= @me.status %>
-          <% else %>
-            等待中...
-          <% end %>
-        </div>
 
-        <div class="player">
-          <%= if @oppo do %>
-            <%= @oppo.username %> <%= @oppo.chips %> <%= @oppo.status %>
-          <% else %>
-            等待中...
-          <% end %>
-        </div>
-      </div>
+    <div class="pot-info">
+      POT: <%= @pot %>
+    </div>
+
+    <table class="min-w-full border-separate border-spacing-y-3 text-center">
+      <thead>
+        <tr class="mb-4">
+          <th class="px-4 py-2 bg-gray-300">Player</th>
+          <th class="px-4 py-2 bg-gray-300">Chips</th>
+          <th class="px-4 py-2 bg-gray-300">Bet</th>
+          <th class="px-4 py-2 bg-gray-300">Cards</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="username-cell"><%= @my_username %></td>
+          <td class="border px-4 py-2"><%= @my_chips_left %></td>
+          <td class="border px-4 py-2"><%= @my_bet %></td>
+          <td class="border px-4 py-2"><%= inspect(@my_hole_cards) %></td>
+        </tr>
+        <tr>
+          <td class="username-cell"><%= @oppo_username %></td>
+          <td class="border px-4 py-2"><%= @oppo_chips_left %></td>
+          <td class="border px-4 py-2"><%= @oppo_bet %></td>
+          <td class="border px-4 py-2"><%= inspect(@oppo_hole_cards) %></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div id="poker-game-table">
       <div class="start-game-button">
         <button phx-click="start-game">Start Game</button>
       </div>
     </div>
 
     <%= if @in_gaming do %>
-      <div>
-        POT: 0
-      </div>
-
-      <div>
-        <%= @me.username %> 当前街: <%= @bets_info[@me.username].current_street_bet %> 总剩余: <%= @bets_info[
-          @me.username
-        ].chips_left %>
-      </div>
-
-      <div>
-        <%= @oppo.username %> 当前街: <%= @bets_info[@oppo.username].current_street_bet %> 总剩余: <%= @bets_info[
-          @oppo.username
-        ].chips_left %>
-      </div>
-
-      <%!-- FIXME: 这里不能嵌套if吗
-       <%= if @hole_cards != [] %>
-          我的手牌<%= @hole_cards %>
-      <% end %> --%>
-      <div>
-        我的手牌 <%= inspect(@hole_cards) %>
-      </div>
-
-      <div class="game-action-button">
-        <button phx-click="game-action-fold">fold</button>
-      </div>
-      <div class="game-action-button">
-        <button phx-click="game-action-call">call</button>
-      </div>
-      <div class="game-action-button">
-        <button phx-click="game-action-raise">raise</button>
+      <div class="grid grid-cols-3 gap-4">
+        <div class="game-action-button">
+          <button phx-click="game-action-fold">fold</button>
+        </div>
+        <div class="game-action-button">
+          <button phx-click="game-action-call">call</button>
+        </div>
+        <div class="game-action-button">
+          <button phx-click="game-action-raise">raise</button>
+        </div>
       </div>
     <% end %>
     """
@@ -112,16 +108,31 @@ defmodule SuperPokerWeb.TableLive do
   def handle_info({:update_bets, bets_info}, socket) do
     IO.inspect(bets_info, label: "收到下注更新信息")
 
+    me = socket.assigns.my_username
+    oppo = socket.assigns.oppo_username
+
+    IO.inspect(me, label: "my name")
+    IO.inspect(oppo, label: "对手姓名")
+
+    IO.inspect(bets_info[me], label: "我的下注")
+
+    IO.inspect(bets_info[me].chips_left, label: "我的筹码余额")
+
     socket =
       socket
       |> assign(:in_gaming, true)
+      |> assign(:pot, bets_info.pot)
+      |> assign(:my_chips_left, bets_info[me].chips_left)
+      |> assign(:oppo_chips_left, bets_info[oppo].chips_left)
+      |> assign(:my_bet, bets_info[me].current_street_bet)
+      |> assign(:oppo_bet, bets_info[oppo].current_street_bet)
       |> assign(:bets_info, bets_info)
 
     {:noreply, socket}
   end
 
   def handle_info({:hole_cards, cards}, socket) do
-    socket = assign(socket, :hole_cards, cards)
+    socket = assign(socket, :my_hole_cards, cards)
     {:noreply, socket}
   end
 
@@ -141,6 +152,15 @@ defmodule SuperPokerWeb.TableLive do
     IO.inspect(me, label: "玩家信息之自己")
     oppo = Enum.find(players_info, nil, fn m -> m.username != socket.assigns.username end)
     IO.inspect(oppo, label: "玩家信息之对手")
-    assign(socket, me: me, oppo: oppo)
+
+    if is_nil(oppo) do
+      socket
+      |> assign(:my_chips_left, me.chips)
+    else
+      socket
+      |> assign(:my_chips_left, me.chips)
+      |> assign(:oppo_username, oppo.username)
+      |> assign(:oppo_chips_left, oppo.chips)
+    end
   end
 end
