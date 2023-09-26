@@ -135,6 +135,14 @@ defmodule SuperPokerWeb.TableLive do
 
   def handle_event("start-game", _, socket) do
     Player.start_game(@username)
+
+    socket =
+      socket
+      |> assign(:community_cards, [])
+      |> assign(:my_hole_cards, [])
+      |> assign(:oppo_hole_cards, [])
+      |> assign(:pot, 0)
+
     {:noreply, socket}
   end
 
@@ -201,7 +209,7 @@ defmodule SuperPokerWeb.TableLive do
     {:noreply, socket}
   end
 
-  def handle_info({:winner, winner, chips}, socket) do
+  def handle_info({:winner, winner, chips, hole_cards}, socket) do
     me = socket.assigns.my_username
     oppo = socket.assigns.oppo_username
 
@@ -216,6 +224,7 @@ defmodule SuperPokerWeb.TableLive do
       |> assign(:oppo_bet, 0)
       |> assign(:my_status, :JOINED)
       |> assign(:oppo_status, :JOINED)
+      |> assign(:oppo_hole_cards, Map.get(hole_cards, oppo, []))
 
     {:noreply, socket}
   end

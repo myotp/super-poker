@@ -147,14 +147,34 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
         _from,
         %State{table: table, rules_mod: mod} = state
       ) do
-    log("收到玩家 #{username} 行动 #{inspect(action)}")
+    IO.puts("===>>>> [WIP] 收到玩家 #{username} 行动 #{inspect(action)}")
     table = mod.handle_action(table, {:player, {username_to_pos(state, username), action}})
-    {:reply, :ok, %State{state | table: table}, {:continue, :do_next_action}}
+    IO.inspect(table, label: "最新下注之后的table")
+    state = %State{state | table: table}
+    notify_bets_info(state)
+    {:reply, :ok, state, {:continue, :do_next_action}}
   end
 
   # 测试用
   def handle_call(:get_state, _from, state) do
     {:reply, state, state}
+  end
+
+  defp notify_bets_info(%State{table: table, player_mod: player} = state) do
+    username0 = pos_to_username(state, 0)
+    username1 = pos_to_username(state, 1)
+
+    p0 = table.players[0]
+    p1 = table.players[1]
+
+    bets_info =
+      %{
+        :pot => table.pot,
+        username0 => %{chips_left: p0.chips, current_street_bet: p0.current_street_bet},
+        username1 => %{chips_left: p1.chips, current_street_bet: p1.current_street_bet}
+      }
+
+    player.notify_bets_info(all_players(state), bets_info)
   end
 
   @impl GenServer
@@ -225,9 +245,13 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
         :do_next_action,
         %State{
           table: %{next_action: {:table, {:show_hands, {pot, chips}}}},
+          player_cards: player_cards,
           player_mod: player
         } = state
       ) do
+    username0 = pos_to_username(state, 0)
+    username1 = pos_to_username(state, 1)
+
     case decide_winner_result(state) do
       {nil, type, cards1, cards2} ->
         half_pot = div(pot, 2)
@@ -237,11 +261,14 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
           |> Map.update!(0, fn current -> current + half_pot end)
           |> Map.update!(1, fn current -> current + half_pot end)
 
+        hole_cards = %{username0 => player_cards[0], username1 => player_cards[1]}
+        chips = %{username0 => players_chips[0], username1 => players_chips[1]}
+
         player.notify_winner_result(
           all_players(state),
           nil,
-          players_chips,
-          {type, cards1, cards2}
+          chips,
+          {type, hole_cards, cards1, cards2}
         )
 
         state = put_in(state.p0.chips, players_chips[0])
@@ -253,12 +280,15 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
       {winner_pos, type, win5, lose5} ->
         username = pos_to_username(state, winner_pos)
         players_chips = Map.update!(chips, winner_pos, fn current -> current + pot end)
+        chips = %{username0 => players_chips[0], username1 => players_chips[1]}
+
+        hole_cards = %{username0 => player_cards[0], username1 => player_cards[1]}
 
         player.notify_winner_result(
           all_players(state),
           username,
-          players_chips,
-          {type, win5, lose5}
+          chips,
+          {type, hole_cards, win5, lose5}
         )
 
         state = put_in(state.p0.chips, players_chips[0])
@@ -279,7 +309,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
     user1 = pos_to_username(state, 1)
     chips_by_username = %{user0 => players_chips[0], user1 => players_chips[1]}
     IO.inspect(player, label: "具体player模块")
-    player.notify_winner_result(all_players(state), username, chips_by_username, nil)
+    player.notify_winner_result(all_players(state), username, chips_by_username)
     state = put_in(state.p0.chips, players_chips[0])
     state = put_in(state.p1.chips, players_chips[1])
     # TODO: 更新筹码信息发送给客户端
@@ -311,7 +341,9 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
   def handle_continue({:deal_done, street}, %State{table: table, rules_mod: mod} = state) do
     log("完成发牌 #{inspect(street)}")
     table = mod.handle_action(table, {:table, {:done, street}})
-    {:noreply, %State{state | table: table}, {:continue, :do_next_action}}
+    state = %State{state | table: table}
+    notify_bets_info(state)
+    {:noreply, state, {:continue, :do_next_action}}
   end
 
   @impl GenServer

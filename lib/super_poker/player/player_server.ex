@@ -48,7 +48,7 @@ defmodule SuperPoker.Player.PlayerServer do
   end
 
   def notify_bets_info(username, blinds) do
-    GenServer.call(via_tuple(username), {:bets_info, blinds})
+    GenServer.cast(via_tuple(username), {:bets_info, blinds})
   end
 
   def deal_hole_cards(username, hole_cards) do
@@ -63,8 +63,8 @@ defmodule SuperPoker.Player.PlayerServer do
     GenServer.call(via_tuple(username), {:todo_actions, action_player, actions})
   end
 
-  def notify_winner_result(username, winner, player_chips, cards) do
-    GenServer.call(via_tuple(username), {:winner_result, winner, player_chips, cards})
+  def notify_winner_result(username, winner, player_chips, hole_cards) do
+    GenServer.call(via_tuple(username), {:winner_result, winner, player_chips, hole_cards})
   end
 
   # ================ 测试辅助 ================================
@@ -110,6 +110,17 @@ defmodule SuperPoker.Player.PlayerServer do
   def handle_cast({:notify_players_info, players_info}, %State{clients: clients} = state) do
     notify_player_clients(clients, {:players_info, players_info})
     {:noreply, state}
+  end
+
+  def handle_cast(
+        {:bets_info, bets_info},
+        %State{username: username, chips_on_table: _chips_on_table, clients: clients} = state
+      ) do
+    # TODO: 这里似乎可以直接把整个bets信息丢给后续了就,每个人的每条街累计下注与总的筹码数量都应该正确显示出来后续
+    total = bets_info[username].chips_left
+    IO.inspect(total, label: "玩家剩余筹码数量为")
+    notify_player_clients(clients, {:update_bets, bets_info})
+    {:noreply, %State{state | chips_on_table: total}}
   end
 
   @impl GenServer
@@ -158,18 +169,6 @@ defmodule SuperPoker.Player.PlayerServer do
   end
 
   # ===================== 来自服务器的请求回调 ====================
-  def handle_call(
-        {:bets_info, bets_info},
-        _from,
-        %State{username: username, chips_on_table: _chips_on_table, clients: clients} = state
-      ) do
-    # TODO: 这里似乎可以直接把整个bets信息丢给后续了就,每个人的每条街累计下注与总的筹码数量都应该正确显示出来后续
-    total = bets_info[username].chips_left
-    IO.inspect(total, label: "玩家剩余筹码数量为")
-    notify_player_clients(clients, {:update_bets, bets_info})
-    {:reply, :ok, %State{state | chips_on_table: total}}
-  end
-
   def handle_call({:deal_hole_cards, hole_cards}, _from, %State{clients: clients} = state) do
     notify_player_clients(clients, {:hole_cards, hole_cards})
     {:reply, :ok, %State{state | hole_cards: hole_cards}}
@@ -195,12 +194,12 @@ defmodule SuperPoker.Player.PlayerServer do
   end
 
   def handle_call(
-        {:winner_result, winner, player_chips, cards},
+        {:winner_result, winner, player_chips, hole_cards},
         _from,
         %State{clients: clients} = state
       ) do
-    IO.puts("===>>> 收到服务器赢家#{winner} 大家筹码 #{inspect(player_chips)} 手牌: #{inspect(cards)}")
-    notify_player_clients(clients, {:winner, winner, player_chips})
+    IO.puts("===>>> 收到服务器赢家#{winner} 大家筹码 #{inspect(player_chips)} 手牌: #{inspect(hole_cards)}")
+    notify_player_clients(clients, {:winner, winner, player_chips, hole_cards})
     {:reply, :ok, state}
   end
 

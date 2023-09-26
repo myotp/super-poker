@@ -24,7 +24,7 @@ defmodule SuperPoker.PlayerNotify.PlayerRequestPrinter do
   end
 
   # 双方摊牌打平
-  def notify_winner_result(all_players, nil, players_chips, {type, win5, lose5}) do
+  def notify_winner_result(all_players, nil, players_chips, {type, _hole_cards, win5, lose5}) do
     Enum.each(all_players, fn player ->
       IO.puts("""
        通知玩家 #{player} 最终两人打平 手牌类型 #{type}
@@ -35,7 +35,7 @@ defmodule SuperPoker.PlayerNotify.PlayerRequestPrinter do
   end
 
   # 正常一方获胜，另一方失败
-  def notify_winner_result(all_players, winner, players_chips, {type, win5, lose5}) do
+  def notify_winner_result(all_players, winner, players_chips, {type, _hole_cards, win5, lose5}) do
     Enum.each(all_players, fn player ->
       IO.puts("""
        通知玩家 #{player} 最终胜利玩家 #{winner} 手牌类型 #{type}

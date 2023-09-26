@@ -34,29 +34,21 @@ defmodule SuperPoker.PlayerNotify.PlayerRequestSender do
   # 一方fold，另一方自动获胜，不用比牌
   def notify_winner_result(all_players, winner, player_chips, nil) do
     Enum.each(all_players, fn player ->
-      Player.notify_winner_result(player, winner, player_chips, nil)
+      Player.notify_winner_result(player, winner, player_chips, %{})
     end)
   end
 
   # 双方摊牌打平
-  def notify_winner_result(all_players, nil, players_chips, {type, win5, lose5}) do
+  def notify_winner_result(all_players, nil, players_chips, {_type, hole_cards, _win5, _lose5}) do
     Enum.each(all_players, fn player ->
-      IO.puts("""
-       通知玩家 #{player} 最终两人打平 手牌类型 #{type}
-       玩家1 #{inspect(win5)} 玩家2 #{inspect(lose5)}
-      大伙筹码更新 #{inspect(players_chips)}
-      """)
+      Player.notify_winner_result(player, nil, players_chips, hole_cards)
     end)
   end
 
   # 正常一方获胜，另一方失败
-  def notify_winner_result(all_players, winner, players_chips, {type, win5, lose5}) do
+  def notify_winner_result(all_players, winner, players_chips, {_type, hole_cards, _win5, _lose5}) do
     Enum.each(all_players, fn player ->
-      IO.puts("""
-       通知玩家 #{player} 最终胜利玩家 #{winner} 手牌类型 #{type}
-       赢家 #{inspect(win5)} 输家 #{inspect(lose5)}
-      大伙筹码更新 #{inspect(players_chips)}
-      """)
+      Player.notify_winner_result(player, winner, players_chips, hole_cards)
     end)
   end
 end

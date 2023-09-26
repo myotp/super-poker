@@ -24,8 +24,9 @@ Player.start_game("anna")
 HeadsupTableServer.debug_state(1001)
 
 PlayerServer.player_action("anna", :check)
-PlayerServer.player_action("anna", :check)
-PlayerServer.player_action("anna", :check)
+PlayerServer.player_action("anna", {:raise, 15})
+PlayerServer.player_action("anna", {:raise, 20})
+PlayerServer.player_action("anna", {:raise, 30})
 
 # TODO
 # 网页端fold，处理正确的结果，fold不展示对手牌，其它情况输的时候，展示对手牌
