@@ -75,13 +75,13 @@ defmodule SuperPokerWeb.TableLive do
           <td class={player_status(@my_status)}><%= @my_username %></td>
           <td class="border px-4 py-2"><%= @my_chips_left %></td>
           <td class="border px-4 py-2"><%= @my_bet %></td>
-          <td class="border">
-            <div class="grid grid-cols-2">
+          <td class="border w-1/3">
+            <div class="grid grid-cols-2 gap-1">
               <%= for card <- @my_hole_cards do %>
                 <img
                   src={card_to_image(card)}
                   alt={inspect(card)}
-                  class="w-24 h-32 rounded-lg border-2 border-black-500"
+                  class="rounded-lg border-2 border-black-500"
                 />
               <% end %>
             </div>
