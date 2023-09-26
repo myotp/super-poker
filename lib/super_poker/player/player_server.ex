@@ -188,7 +188,7 @@ defmodule SuperPoker.Player.PlayerServer do
       notify_player_clients(clients, {:bet_actions, actions})
       {:reply, :ok, %State{state | bet_actions: actions}}
     else
-      notify_player_clients(clients, {:wating, action_player})
+      notify_player_clients(clients, {:waiting, action_player})
       {:reply, :ok, %State{state | bet_actions: []}}
     end
   end

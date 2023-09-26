@@ -31,6 +31,7 @@ defmodule SuperPokerWeb.TableLive do
       |> assign(oppo_hole_cards: [])
       |> assign(my_status: :JOINED)
       |> assign(oppo_status: :EMPTY)
+      |> assign(my_turn: false)
       |> assign(
         community_cards: [
           # %Card{rank: 3, suit: :hearts},
@@ -108,7 +109,7 @@ defmodule SuperPokerWeb.TableLive do
       <button phx-click="start-game">Start Game</button>
     </div>
 
-    <div :if={@in_gaming} class="grid grid-cols-4 gap-4">
+    <div :if={@in_gaming and @my_turn} class="grid grid-cols-4 gap-4">
       <div class="game-action-button">
         <button phx-click="game-action-check">check</button>
       </div>
@@ -155,16 +156,19 @@ defmodule SuperPokerWeb.TableLive do
   end
 
   def handle_event("game-action-check", _, socket) do
+    socket = assign(socket, :my_turn, false)
     Player.player_action(my_username(socket), :check)
     {:noreply, socket}
   end
 
   def handle_event("game-action-call", _, socket) do
+    socket = assign(socket, :my_turn, false)
     Player.player_action(my_username(socket), :call)
     {:noreply, socket}
   end
 
   def handle_event("game-action-fold", _, socket) do
+    socket = assign(socket, :my_turn, false)
     Player.player_action(my_username(socket), :fold)
     {:noreply, socket}
   end
@@ -233,7 +237,18 @@ defmodule SuperPokerWeb.TableLive do
       |> assign(:my_status, :JOINED)
       |> assign(:oppo_status, :JOINED)
       |> assign(:oppo_hole_cards, Map.get(hole_cards, oppo, []))
+      |> assign(my_turn: false)
 
+    {:noreply, socket}
+  end
+
+  def handle_info({:bet_actions, _}, socket) do
+    socket = assign(socket, :my_turn, true)
+    {:noreply, socket}
+  end
+
+  def handle_info({:waiting, _}, socket) do
+    socket = assign(socket, :my_turn, false)
     {:noreply, socket}
   end
 
