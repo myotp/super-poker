@@ -309,7 +309,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
     user1 = pos_to_username(state, 1)
     chips_by_username = %{user0 => players_chips[0], user1 => players_chips[1]}
     IO.inspect(player, label: "具体player模块")
-    player.notify_winner_result(all_players(state), username, chips_by_username)
+    player.notify_winner_result(all_players(state), username, chips_by_username, nil)
     state = put_in(state.p0.chips, players_chips[0])
     state = put_in(state.p1.chips, players_chips[1])
     # TODO: 更新筹码信息发送给客户端

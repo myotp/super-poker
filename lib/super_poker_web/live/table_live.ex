@@ -22,7 +22,7 @@ defmodule SuperPokerWeb.TableLive do
       |> assign(pot: 0)
       |> assign(in_gaming: false)
       |> assign(my_username: @username)
-      |> assign(oppo_username: "WAITING")
+      |> assign(oppo_username: "")
       |> assign(my_chips_left: 500)
       |> assign(oppo_chips_left: 0)
       |> assign(my_bet: 0)
@@ -46,8 +46,6 @@ defmodule SuperPokerWeb.TableLive do
 
   def render(assigns) do
     ~H"""
-    <h1>Hello, game</h1>
-
     <div class="pot-info">
       POT: <%= @pot %><br /> Community Cards:
       <div class="mt-4 grid grid-cols-5 gap-4">
@@ -91,12 +89,22 @@ defmodule SuperPokerWeb.TableLive do
           <td class={player_status(@oppo_status)}><%= @oppo_username %></td>
           <td class="border px-4 py-2"><%= @oppo_chips_left %></td>
           <td class="border px-4 py-2"><%= @oppo_bet %></td>
-          <td class="border px-4 py-2"><%= inspect(@oppo_hole_cards) %></td>
+          <td class="border w-1/3">
+            <div class="grid grid-cols-2 gap-1">
+              <%= for card <- @oppo_hole_cards do %>
+                <img
+                  src={card_to_image(card)}
+                  alt={inspect(card)}
+                  class="rounded-lg border-2 border-black-500"
+                />
+              <% end %>
+            </div>
+          </td>
         </tr>
       </tbody>
     </table>
 
-    <div :if={not @in_gaming} class="start-game-button">
+    <div :if={not @in_gaming and @oppo_username != ""} class="start-game-button">
       <button phx-click="start-game">Start Game</button>
     </div>
 
