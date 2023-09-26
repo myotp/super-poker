@@ -1,6 +1,7 @@
 defmodule SuperPokerWeb.TableLive do
   use SuperPokerWeb, :live_view
 
+  alias SuperPoker.Core.Card
   alias SuperPoker.Player
 
   # FIXME: 从/login页面通过session传过来
@@ -30,7 +31,15 @@ defmodule SuperPokerWeb.TableLive do
       |> assign(oppo_hole_cards: [])
       |> assign(my_status: :JOINED)
       |> assign(oppo_status: :EMPTY)
-      |> assign(community_cards: [])
+      |> assign(
+        community_cards: [
+          # %Card{rank: 3, suit: :hearts},
+          # %Card{rank: 11, suit: :spades},
+          # %Card{rank: 12, suit: :clubs},
+          # %Card{rank: 13, suit: :diamonds},
+          # %Card{rank: 1, suit: :spades}
+        ]
+      )
 
     {:ok, socket}
   end
@@ -40,7 +49,16 @@ defmodule SuperPokerWeb.TableLive do
     <h1>Hello, game</h1>
 
     <div class="pot-info">
-      POT: <%= @pot %><br /> Community Cards: <%= inspect(@community_cards) %>
+      POT: <%= @pot %><br /> Community Cards:
+      <div class="mt-4 grid grid-cols-5 gap-4">
+        <%= for card <- @community_cards do %>
+          <img
+            src={card_to_image(card)}
+            alt={inspect(card)}
+            class="rounded-lg border-2 border-black-500"
+          />
+        <% end %>
+      </div>
     </div>
 
     <table class="min-w-full border-separate border-spacing-y-3 text-center">
@@ -57,7 +75,17 @@ defmodule SuperPokerWeb.TableLive do
           <td class={player_status(@my_status)}><%= @my_username %></td>
           <td class="border px-4 py-2"><%= @my_chips_left %></td>
           <td class="border px-4 py-2"><%= @my_bet %></td>
-          <td class="border px-4 py-2"><%= inspect(@my_hole_cards) %></td>
+          <td class="border">
+            <div class="grid grid-cols-2">
+              <%= for card <- @my_hole_cards do %>
+                <img
+                  src={card_to_image(card)}
+                  alt={inspect(card)}
+                  class="w-24 h-32 rounded-lg border-2 border-black-500"
+                />
+              <% end %>
+            </div>
+          </td>
         </tr>
         <tr>
           <td class={player_status(@oppo_status)}><%= @oppo_username %></td>
@@ -88,6 +116,22 @@ defmodule SuperPokerWeb.TableLive do
     </div>
     """
   end
+
+  defp card_to_image(%Card{rank: rank, suit: suit}) do
+    "/images/poker/#{suit_file_name(suit)}-#{rank_file_name(rank)}.svg"
+  end
+
+  defp suit_file_name(:diamonds), do: "DIAMOND"
+  defp suit_file_name(:hearts), do: "HEART"
+  defp suit_file_name(:spades), do: "SPADE"
+  defp suit_file_name(:clubs), do: "CLUB"
+
+  defp rank_file_name(11), do: "11-JACK"
+  defp rank_file_name(12), do: "12-QUEEN"
+  defp rank_file_name(13), do: "13-KING"
+  # ACE
+  defp rank_file_name(14), do: "1"
+  defp rank_file_name(n), do: Integer.to_string(n)
 
   def handle_event("start-game", _, socket) do
     Player.start_game(@username)
