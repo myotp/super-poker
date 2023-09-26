@@ -216,7 +216,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
       ) do
     log("牌桌即将发牌#{street}")
     {cards, new_state} = take_cards(state, street)
-    player.notify_deal_cards(all_players(new_state), street, cards)
+    player.deal_community_cards(all_players(new_state), street, cards)
     {:noreply, new_state, {:continue, {:deal_done, street}}}
   end
 

@@ -11,6 +11,7 @@ defmodule SuperPoker.Player.PlayerServer do
       :total_chips,
       table_id: nil,
       hole_cards: [],
+      community_cards: nil,
       bet_actions: [],
       chips_on_table: 0,
       state: :LOBBY,
@@ -52,6 +53,10 @@ defmodule SuperPoker.Player.PlayerServer do
 
   def deal_hole_cards(username, hole_cards) do
     GenServer.call(via_tuple(username), {:deal_hole_cards, hole_cards})
+  end
+
+  def deal_community_cards(username, street, cards) do
+    GenServer.call(via_tuple(username), {:deal_community_cards, street, cards})
   end
 
   def notify_player_todo_actions(username, action_player, actions) do
@@ -132,7 +137,7 @@ defmodule SuperPoker.Player.PlayerServer do
 
   def handle_call(:start_game, _from, %State{table_id: table_id, username: username} = state) do
     TableServerAPI.start_game(table_id, username)
-    {:reply, :ok, state}
+    {:reply, :ok, %State{state | community_cards: []}}
   end
 
   def handle_call(
@@ -168,6 +173,11 @@ defmodule SuperPoker.Player.PlayerServer do
   def handle_call({:deal_hole_cards, hole_cards}, _from, %State{clients: clients} = state) do
     notify_player_clients(clients, {:hole_cards, hole_cards})
     {:reply, :ok, %State{state | hole_cards: hole_cards}}
+  end
+
+  def handle_call({:deal_community_cards, street, cards}, _from, %State{clients: clients} = state) do
+    notify_player_clients(clients, {:community_cards, street, cards})
+    {:reply, :ok, %State{state | community_cards: state.community_cards ++ cards}}
   end
 
   def handle_call(

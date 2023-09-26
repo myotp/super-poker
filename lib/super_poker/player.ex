@@ -34,6 +34,10 @@ defmodule SuperPoker.Player do
     PlayerServer.deal_hole_cards(username, hole_cards)
   end
 
+  def deal_community_cards(username, street, cards) do
+    PlayerServer.deal_community_cards(username, street, cards)
+  end
+
   def notify_player_todo_actions(player, current_action_username, actions) do
     PlayerServer.notify_player_todo_actions(player, current_action_username, actions)
   end

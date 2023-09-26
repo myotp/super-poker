@@ -30,6 +30,7 @@ defmodule SuperPokerWeb.TableLive do
       |> assign(oppo_hole_cards: [])
       |> assign(my_status: :JOINED)
       |> assign(oppo_status: :EMPTY)
+      |> assign(community_cards: [])
 
     {:ok, socket}
   end
@@ -39,7 +40,7 @@ defmodule SuperPokerWeb.TableLive do
     <h1>Hello, game</h1>
 
     <div class="pot-info">
-      POT: <%= @pot %>
+      POT: <%= @pot %><br /> Community Cards: <%= inspect(@community_cards) %>
     </div>
 
     <table class="min-w-full border-separate border-spacing-y-3 text-center">
@@ -148,6 +149,11 @@ defmodule SuperPokerWeb.TableLive do
 
   def handle_info({:hole_cards, cards}, socket) do
     socket = assign(socket, :my_hole_cards, cards)
+    {:noreply, socket}
+  end
+
+  def handle_info({:community_cards, _street, cards}, socket) do
+    socket = assign(socket, :community_cards, socket.assigns.community_cards ++ cards)
     {:noreply, socket}
   end
 
