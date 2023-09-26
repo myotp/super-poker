@@ -34,13 +34,16 @@ defmodule SuperPoker.Player do
     PlayerServer.deal_hole_cards(username, hole_cards)
   end
 
+  def deal_community_cards(username, street, cards) do
+    PlayerServer.deal_community_cards(username, street, cards)
+  end
+
   def notify_player_todo_actions(player, current_action_username, actions) do
     PlayerServer.notify_player_todo_actions(player, current_action_username, actions)
   end
 
-  # TODO: 通知show hands手牌
-
-  def notify_winner_result(player, winner, player_chips) do
-    PlayerServer.notify_winner_result(player, winner, player_chips)
+  # 通知show hands手牌, 如果有玩家fold的话, hole_cards为%{}不予显示
+  def notify_winner_result(player, winner, player_chips, hole_cards_and_win5) do
+    PlayerServer.notify_winner_result(player, winner, player_chips, hole_cards_and_win5)
   end
 end
