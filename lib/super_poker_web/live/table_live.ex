@@ -71,19 +71,17 @@ defmodule SuperPokerWeb.TableLive do
       <button phx-click="start-game">Start Game</button>
     </div>
 
-    <%= if @in_gaming do %>
-      <div class="grid grid-cols-3 gap-4">
-        <div class="game-action-button">
-          <button phx-click="game-action-fold">fold</button>
-        </div>
-        <div class="game-action-button">
-          <button phx-click="game-action-call">call</button>
-        </div>
-        <div class="game-action-button">
-          <button phx-click="game-action-raise">raise</button>
-        </div>
+    <div :if={@in_gaming} class="grid grid-cols-3 gap-4">
+      <div class="game-action-button">
+        <button phx-click="game-action-fold">fold</button>
       </div>
-    <% end %>
+      <div class="game-action-button">
+        <button phx-click="game-action-call">call</button>
+      </div>
+      <div class="game-action-button">
+        <button phx-click="game-action-raise">raise</button>
+      </div>
+    </div>
     """
   end
 
