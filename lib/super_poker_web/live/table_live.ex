@@ -28,6 +28,8 @@ defmodule SuperPokerWeb.TableLive do
       |> assign(oppo_bet: 0)
       |> assign(my_hole_cards: [])
       |> assign(oppo_hole_cards: [])
+      |> assign(my_status: :JOINED)
+      |> assign(oppo_status: :EMPTY)
 
     {:ok, socket}
   end
@@ -51,13 +53,13 @@ defmodule SuperPokerWeb.TableLive do
       </thead>
       <tbody>
         <tr>
-          <td class="username-cell"><%= @my_username %></td>
+          <td class={player_status(@my_status)}><%= @my_username %></td>
           <td class="border px-4 py-2"><%= @my_chips_left %></td>
           <td class="border px-4 py-2"><%= @my_bet %></td>
           <td class="border px-4 py-2"><%= inspect(@my_hole_cards) %></td>
         </tr>
         <tr>
-          <td class="username-cell"><%= @oppo_username %></td>
+          <td class={player_status(@oppo_status)}><%= @oppo_username %></td>
           <td class="border px-4 py-2"><%= @oppo_chips_left %></td>
           <td class="border px-4 py-2"><%= @oppo_bet %></td>
           <td class="border px-4 py-2"><%= inspect(@oppo_hole_cards) %></td>
@@ -65,10 +67,8 @@ defmodule SuperPokerWeb.TableLive do
       </tbody>
     </table>
 
-    <div id="poker-game-table">
-      <div class="start-game-button">
-        <button phx-click="start-game">Start Game</button>
-      </div>
+    <div :if={not @in_gaming} class="start-game-button">
+      <button phx-click="start-game">Start Game</button>
     </div>
 
     <%= if @in_gaming do %>
@@ -98,6 +98,10 @@ defmodule SuperPokerWeb.TableLive do
   end
 
   defp my_username(socket), do: socket.assigns.username
+
+  defp player_status(:EMPTY), do: "username-empty"
+  defp player_status(:JOINED), do: "username-joined"
+  defp player_status(:READY), do: "username-ready"
 
   def handle_info({:players_info, players_info}, socket) do
     IO.inspect(players_info, label: "LiveView收到玩家信息更新")
@@ -136,9 +140,22 @@ defmodule SuperPokerWeb.TableLive do
     {:noreply, socket}
   end
 
-  def handle_info({:winner, winner}, socket) do
-    IO.inspect(winner, label: "赢家")
-    socket = assign(socket, in_gaming: false)
+  def handle_info({:winner, winner, chips}, socket) do
+    me = socket.assigns.my_username
+    oppo = socket.assigns.oppo_username
+
+    IO.inspect(winner, label: "收到服务器结果赢家")
+
+    socket =
+      socket
+      |> assign(:in_gaming, false)
+      |> assign(:my_chips_left, chips[me])
+      |> assign(:my_bet, 0)
+      |> assign(:oppo_chips_left, chips[oppo])
+      |> assign(:oppo_bet, 0)
+      |> assign(:my_status, :JOINED)
+      |> assign(:oppo_status, :JOINED)
+
     {:noreply, socket}
   end
 
@@ -156,11 +173,14 @@ defmodule SuperPokerWeb.TableLive do
     if is_nil(oppo) do
       socket
       |> assign(:my_chips_left, me.chips)
+      |> assign(:my_status, me.status)
     else
       socket
       |> assign(:my_chips_left, me.chips)
+      |> assign(:my_status, me.status)
       |> assign(:oppo_username, oppo.username)
       |> assign(:oppo_chips_left, oppo.chips)
+      |> assign(:oppo_status, oppo.status)
     end
   end
 end

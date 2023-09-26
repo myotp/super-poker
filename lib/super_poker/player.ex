@@ -39,8 +39,7 @@ defmodule SuperPoker.Player do
   end
 
   # TODO: 通知show hands手牌
-
-  def notify_winner_result(player, winner, player_chips) do
-    PlayerServer.notify_winner_result(player, winner, player_chips)
+  def notify_winner_result(player, winner, player_chips, cards) do
+    PlayerServer.notify_winner_result(player, winner, player_chips, cards)
   end
 end
