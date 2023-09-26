@@ -41,6 +41,7 @@ defmodule SuperPokerWeb.TableLive do
           # %Card{rank: 1, suit: :spades}
         ]
       )
+      |> assign(win5: [])
 
     {:ok, socket}
   end
@@ -51,11 +52,7 @@ defmodule SuperPokerWeb.TableLive do
       POT: <%= @pot %><br /> Community Cards:
       <div class="mt-4 grid grid-cols-5 gap-4">
         <%= for card <- @community_cards do %>
-          <img
-            src={card_to_image(card)}
-            alt={inspect(card)}
-            class="rounded-lg border-2 border-black-500"
-          />
+          <img src={card_to_image(card)} alt={inspect(card)} class={card_css(card, @win5)} />
         <% end %>
       </div>
     </div>
@@ -77,11 +74,7 @@ defmodule SuperPokerWeb.TableLive do
           <td class="border w-1/3">
             <div class="grid grid-cols-2 gap-1">
               <%= for card <- @my_hole_cards do %>
-                <img
-                  src={card_to_image(card)}
-                  alt={inspect(card)}
-                  class="rounded-lg border-2 border-black-500"
-                />
+                <img src={card_to_image(card)} alt={inspect(card)} class={card_css(card, @win5)} />
               <% end %>
             </div>
           </td>
@@ -93,11 +86,7 @@ defmodule SuperPokerWeb.TableLive do
           <td class="border w-1/3">
             <div class="grid grid-cols-2 gap-1">
               <%= for card <- @oppo_hole_cards do %>
-                <img
-                  src={card_to_image(card)}
-                  alt={inspect(card)}
-                  class="rounded-lg border-2 border-black-500"
-                />
+                <img src={card_to_image(card)} alt={inspect(card)} class={card_css(card, @win5)} />
               <% end %>
             </div>
           </td>
@@ -130,6 +119,16 @@ defmodule SuperPokerWeb.TableLive do
     "/images/poker/#{suit_file_name(suit)}-#{rank_file_name(rank)}.svg"
   end
 
+  defp card_css(card, win5) do
+    case Enum.member?(win5, card) do
+      true ->
+        "rounded-lg border-2 border-blue-700"
+
+      false ->
+        "rounded-lg border-2 border-black-500"
+    end
+  end
+
   defp suit_file_name(:diamonds), do: "DIAMOND"
   defp suit_file_name(:hearts), do: "HEART"
   defp suit_file_name(:spades), do: "SPADE"
@@ -148,6 +147,7 @@ defmodule SuperPokerWeb.TableLive do
     socket =
       socket
       |> assign(:community_cards, [])
+      |> assign(:win5, [])
       |> assign(:my_hole_cards, [])
       |> assign(:oppo_hole_cards, [])
       |> assign(:pot, 0)
@@ -221,7 +221,7 @@ defmodule SuperPokerWeb.TableLive do
     {:noreply, socket}
   end
 
-  def handle_info({:winner, winner, chips, hole_cards}, socket) do
+  def handle_info({:winner, winner, chips, {hole_cards, win5}}, socket) do
     me = socket.assigns.my_username
     oppo = socket.assigns.oppo_username
 
@@ -237,6 +237,7 @@ defmodule SuperPokerWeb.TableLive do
       |> assign(:my_status, :JOINED)
       |> assign(:oppo_status, :JOINED)
       |> assign(:oppo_hole_cards, Map.get(hole_cards, oppo, []))
+      |> assign(:win5, win5)
       |> assign(my_turn: false)
 
     {:noreply, socket}

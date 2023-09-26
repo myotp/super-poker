@@ -63,8 +63,11 @@ defmodule SuperPoker.Player.PlayerServer do
     GenServer.call(via_tuple(username), {:todo_actions, action_player, actions})
   end
 
-  def notify_winner_result(username, winner, player_chips, hole_cards) do
-    GenServer.call(via_tuple(username), {:winner_result, winner, player_chips, hole_cards})
+  def notify_winner_result(username, winner, player_chips, hole_cards_and_win5) do
+    GenServer.call(
+      via_tuple(username),
+      {:winner_result, winner, player_chips, hole_cards_and_win5}
+    )
   end
 
   # ================ 测试辅助 ================================
@@ -194,12 +197,12 @@ defmodule SuperPoker.Player.PlayerServer do
   end
 
   def handle_call(
-        {:winner_result, winner, player_chips, hole_cards},
+        {:winner_result, winner, player_chips, {hole_cards, win5}},
         _from,
         %State{clients: clients} = state
       ) do
     IO.puts("===>>> 收到服务器赢家#{winner} 大家筹码 #{inspect(player_chips)} 手牌: #{inspect(hole_cards)}")
-    notify_player_clients(clients, {:winner, winner, player_chips, hole_cards})
+    notify_player_clients(clients, {:winner, winner, player_chips, {hole_cards, win5}})
     {:reply, :ok, state}
   end
 

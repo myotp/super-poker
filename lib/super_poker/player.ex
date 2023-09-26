@@ -43,7 +43,7 @@ defmodule SuperPoker.Player do
   end
 
   # 通知show hands手牌, 如果有玩家fold的话, hole_cards为%{}不予显示
-  def notify_winner_result(player, winner, player_chips, hole_cards) do
-    PlayerServer.notify_winner_result(player, winner, player_chips, hole_cards)
+  def notify_winner_result(player, winner, player_chips, hole_cards_and_win5) do
+    PlayerServer.notify_winner_result(player, winner, player_chips, hole_cards_and_win5)
   end
 end
