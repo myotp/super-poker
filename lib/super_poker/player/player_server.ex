@@ -219,13 +219,6 @@ defmodule SuperPoker.Player.PlayerServer do
     true
   end
 
-  # TODO: 这里，等服务器修正，返回username做key之后，才有办法实现
-  # 1. 更新玩家自己的剩余筹码量
-  # 2. 更新桌上其它玩家的筹码量
-  defp update_chips(state, _player_chips) do
-    state
-  end
-
   defp log(msg) do
     Logger.info("#{inspect(self())} " <> msg, ansi_color: :light_magenta)
   end
