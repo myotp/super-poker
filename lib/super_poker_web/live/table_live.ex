@@ -71,7 +71,10 @@ defmodule SuperPokerWeb.TableLive do
       <button phx-click="start-game">Start Game</button>
     </div>
 
-    <div :if={@in_gaming} class="grid grid-cols-3 gap-4">
+    <div :if={@in_gaming} class="grid grid-cols-4 gap-4">
+      <div class="game-action-button">
+        <button phx-click="game-action-check">check</button>
+      </div>
       <div class="game-action-button">
         <button phx-click="game-action-fold">fold</button>
       </div>
@@ -87,6 +90,16 @@ defmodule SuperPokerWeb.TableLive do
 
   def handle_event("start-game", _, socket) do
     Player.start_game(@username)
+    {:noreply, socket}
+  end
+
+  def handle_event("game-action-check", _, socket) do
+    Player.player_action(my_username(socket), :check)
+    {:noreply, socket}
+  end
+
+  def handle_event("game-action-call", _, socket) do
+    Player.player_action(my_username(socket), :call)
     {:noreply, socket}
   end
 
