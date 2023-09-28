@@ -27,7 +27,7 @@ config :super_poker, SuperPokerWeb.Endpoint,
 #
 # For production it's recommended to configure a different adapter
 # at the `config/runtime.exs`.
-config :mycool, SuperPoker.Mailer, adapter: Swoosh.Adapters.Local
+config :super_poker, SuperPoker.Mailer, adapter: Swoosh.Adapters.Local
 
 # Configure esbuild (the version is required)
 config :esbuild,
