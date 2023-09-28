@@ -23,6 +23,12 @@ config :super_poker, SuperPokerWeb.Endpoint,
   secret_key_base: "CPIfSKkpUC9CIqgC8d1S5w/xuCZOtqQoGB0nNzjwPJVQhohjTHZ31AXzdkzkR7QI",
   server: false
 
+# In test we don't send emails.
+config :super_poker, SuperPoker.Mailer, adapter: Swoosh.Adapters.Test
+
+# Disable swoosh api client as it is only required for production adapters.
+config :swoosh, :api_client, false
+
 # Print only warnings and errors during test
 config :logger, level: :warning
 

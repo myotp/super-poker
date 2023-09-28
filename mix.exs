@@ -50,7 +50,8 @@ defmodule SuperPoker.MixProject do
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
       {:mix_test_watch, "~> 1.1", only: [:dev, :test], runtime: false},
-      {:credo, "~> 1.6"}
+      {:credo, "~> 1.6"},
+      {:swoosh, "~> 1.4"}
     ]
   end
 
