@@ -10,11 +10,13 @@ defmodule SuperPokerWeb.TableLive do
     IO.inspect(session, label: "session")
     username = socket.assigns.current_user.email
 
+    table_id = String.to_integer(params["id"])
+
     if connected?(socket) do
       IO.inspect(username, label: "当前登录玩家用户名")
       # FIXME: 这里，强行就先启动这个玩家
       Player.start_player(username)
-      Player.join_table(username, 1001, 500)
+      Player.join_table(username, table_id, 500)
     end
 
     socket =
