@@ -13,6 +13,10 @@ defmodule SuperPoker.Player do
     PlayerServer.join_table(username, table_id, buyin)
   end
 
+  def leave_table(username) do
+    PlayerServer.leave_table(username)
+  end
+
   def start_game(username) do
     PlayerServer.start_game(username)
   end
