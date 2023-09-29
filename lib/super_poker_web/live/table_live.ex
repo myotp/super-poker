@@ -4,24 +4,27 @@ defmodule SuperPokerWeb.TableLive do
   alias SuperPoker.Core.Card
   alias SuperPoker.Player
 
-  # FIXME: 从/login页面通过session传过来
-  @username "lvcas"
-
-  def mount(_, _, socket) do
+  def mount(params, session, socket) do
     IO.inspect(self(), label: "MOUNT <PID>")
+    IO.inspect(params, label: "params")
+    IO.inspect(session, label: "session")
+    username = socket.assigns.current_user.email
+
+    table_id = String.to_integer(params["id"])
 
     if connected?(socket) do
+      IO.inspect(username, label: "当前登录玩家用户名")
       # FIXME: 这里，强行就先启动这个玩家
-      Player.start_player(@username)
-      Player.join_table(@username, 1001, 500)
+      Player.start_player(username)
+      Player.join_table(username, table_id, 500)
     end
 
     socket =
       socket
-      |> assign(username: @username)
+      |> assign(username: username)
       |> assign(pot: 0)
       |> assign(in_gaming: false)
-      |> assign(my_username: @username)
+      |> assign(my_username: username)
       |> assign(oppo_username: "")
       |> assign(my_chips_left: 500)
       |> assign(oppo_chips_left: 0)
@@ -48,6 +51,9 @@ defmodule SuperPokerWeb.TableLive do
 
   def render(assigns) do
     ~H"""
+    <div class="welcome-message">
+      Welcome <span class="welcome-username"><%= @current_user.email %></span>
+    </div>
     <div class="pot-info">
       POT: <%= @pot %><br /> Community Cards:
       <div class="mt-4 grid grid-cols-5 gap-4">
@@ -142,7 +148,7 @@ defmodule SuperPokerWeb.TableLive do
   defp rank_file_name(n), do: Integer.to_string(n)
 
   def handle_event("start-game", _, socket) do
-    Player.start_game(@username)
+    Player.start_game(socket.assigns.username)
 
     socket =
       socket

@@ -13,6 +13,9 @@ defmodule SuperPoker.GameServer.GameServerTopSup do
       # 读取所有牌桌静态信息，包括大小盲数量，最大玩家数
       SuperPoker.GameServer.TableLoader,
 
+      # 统计每个桌子信息的服务器
+      SuperPoker.GameServer.TableManager,
+
       # 具体牌桌进程的DynamicSupervisor
       SuperPoker.GameServer.TableSupervisor,
 
