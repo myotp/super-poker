@@ -17,6 +17,8 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
   alias SuperPoker.Core.Deck
   alias SuperPoker.Core.Hand
   alias SuperPoker.Core.Ranking
+  alias SuperPoker.GameServer.TableManager
+  alias SuperPoker.GameServer.TableConfig
   require Logger
 
   @moduledoc """
@@ -86,6 +88,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
 
   @impl GenServer
   def init(%{
+        id: table_id,
         max_players: max_players,
         sb: sb,
         bb: bb,
@@ -101,6 +104,14 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
       rules_mod: rules_mod,
       player_mod: player_mod
     }
+
+    TableManager.register_table(%TableConfig{
+      table_id: table_id,
+      max_players: max_players,
+      sb: sb,
+      bb: bb,
+      buyin: buyin
+    })
 
     log("启动牌桌进程 #{inspect(state)}")
     {:ok, state}

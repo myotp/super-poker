@@ -35,3 +35,8 @@ PlayerServer.player_action("anna", {:raise, 30})
 - LiveView客户端的实现，显示具体扑克牌，更多操作，更合理的页面规划，等等，完成一个基本可用的简单客户端
 - LiveView方面，测试LiveView
 - 后续跟随pragmaticstudio课程融入更多LiveView内容到客户端
+
+* TODO
+- 参考12.Sorting给lobby加入排序
+- 参考13.Pagination给lobby加入分页
+- 参考5.Dynamic Form给raise设置range
