@@ -14,7 +14,6 @@ defmodule SuperPokerWeb.TableLive do
 
     if connected?(socket) do
       IO.inspect(username, label: "当前登录玩家用户名")
-      # FIXME: 这里，强行就先启动这个玩家
       Player.start_player(username)
       Player.join_table(username, table_id, 500)
     end
@@ -100,8 +99,13 @@ defmodule SuperPokerWeb.TableLive do
       </tbody>
     </table>
 
-    <div :if={not @in_gaming and @oppo_username != ""} class="start-game-button">
-      <button phx-click="start-game">Start Game</button>
+    <div class="grid grid-cols-2 gap-4">
+      <div :if={not @in_gaming and @oppo_username != ""} class="start-game-button">
+        <button phx-click="start-game">Start Game</button>
+      </div>
+      <div :if={not @in_gaming} class="start-game-button">
+        <button phx-click="leave-table">Leave Table</button>
+      </div>
     </div>
 
     <div :if={@in_gaming and @my_turn} class="grid grid-cols-4 gap-4">
@@ -146,6 +150,11 @@ defmodule SuperPokerWeb.TableLive do
   # ACE
   defp rank_file_name(14), do: "1"
   defp rank_file_name(n), do: Integer.to_string(n)
+
+  def handle_event("leave-table", _, socket) do
+    Player.leave_table(socket.assigns.username)
+    {:noreply, push_redirect(socket, to: ~p"/lobby")}
+  end
 
   def handle_event("start-game", _, socket) do
     Player.start_game(socket.assigns.username)
@@ -274,6 +283,9 @@ defmodule SuperPokerWeb.TableLive do
       socket
       |> assign(:my_chips_left, me.chips)
       |> assign(:my_status, me.status)
+      # 玩家离开的情况
+      |> assign(:oppo_username, "")
+      |> assign(:oppo_chips_left, 0)
     else
       socket
       |> assign(:my_chips_left, me.chips)

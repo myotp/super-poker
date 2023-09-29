@@ -5,4 +5,8 @@ defmodule SuperPoker.Table do
   def join_table(table_id, username) do
     HeadsupTableServer.join_table(table_id, username)
   end
+
+  def leave_table(table_id, username) do
+    HeadsupTableServer.leave_table(table_id, username)
+  end
 end

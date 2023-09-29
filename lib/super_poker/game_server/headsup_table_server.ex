@@ -29,6 +29,10 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
     GenServer.call(via_table_id(table_id), {:join_table, username})
   end
 
+  def leave_table(table_id, username) do
+    GenServer.call(via_table_id(table_id), {:leave_table, username})
+  end
+
   def start_game(table_id, username) do
     GenServer.call(via_table_id(table_id), {:start_game, username})
   end
@@ -134,6 +138,50 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
         state = %State{state | p1: p1}
         notify_players_info(state)
         {:reply, :ok, state}
+    end
+  end
+
+  def handle_call({:leave_table, username}, _from, state) do
+    # FIXME: 这里, struct不能直接x[:a][:b]的多层自动返回nil如何更优雅的访问?
+    username0 =
+      state
+      |> Map.get(:p0)
+      |> case do
+        nil ->
+          nil
+
+        user ->
+          user.username
+      end
+
+    username1 =
+      state
+      |> Map.get(:p1)
+      |> case do
+        nil ->
+          nil
+
+        user ->
+          user.username
+      end
+
+    case {username0, username1} do
+      {^username, _} ->
+        # FIXME: 这里如何更优雅的通知所有玩家此人离开, 并优雅的返回chips
+        chips_on_table = state.p0.chips
+        state = %State{state | p0: nil}
+        notify_players_info(state)
+        {:reply, {:ok, chips_on_table}, state}
+
+      {_, ^username} ->
+        chips_on_table = state.p1.chips
+        state = %State{state | p1: nil}
+        notify_players_info(state)
+        {:reply, {:ok, chips_on_table}, state}
+
+      other ->
+        IO.inspect(other, label: "HELP!!!!! =========>>>>>>>>>>")
+        {:error, :not_in_table, state}
     end
   end
 
@@ -371,6 +419,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
       |> Enum.map(fn player -> Map.take(player, [:username, :chips, :status]) end)
 
     all_players = players_info |> Enum.map(fn player -> player.username end)
+    IO.inspect(all_players, label: "桌子通知所有玩家")
     player.notify_players_info(all_players, players_info)
   end
 

@@ -30,7 +30,13 @@ defmodule SuperPoker.Player.PlayerServer do
   end
 
   def join_table(username, table_id, buyin) do
-    GenServer.call(via_tuple(username), {:join_table, table_id, buyin})
+    # 当玩家离开再重新回来的时候player_server进程已经有了,这里需要额外注册client pid
+    client = self()
+    GenServer.call(via_tuple(username), {:join_table, table_id, buyin, client})
+  end
+
+  def leave_table(username) do
+    GenServer.call(via_tuple(username), :leave_table)
   end
 
   def start_game(username) do
@@ -129,7 +135,7 @@ defmodule SuperPoker.Player.PlayerServer do
   @impl GenServer
   # ========= 来自客户端方面的请求回调 ==============
   def handle_call(
-        {:join_table, table_id, buyin},
+        {:join_table, table_id, buyin, client_pid},
         _from,
         %State{username: username, total_chips: total_chips} = state
       ) do
@@ -139,13 +145,23 @@ defmodule SuperPoker.Player.PlayerServer do
           state
           | chips_on_table: buyin,
             table_id: table_id,
-            total_chips: total_chips - buyin
+            total_chips: total_chips - buyin,
+            clients: [client_pid]
         }
 
         {:reply, :ok, state}
 
       error ->
         {:reply, error, state}
+    end
+  end
+
+  def handle_call(:leave_table, _from, %State{username: username, table_id: table_id} = state) do
+    case Table.leave_table(table_id, username) do
+      {:ok, chips_on_table} ->
+        state = %State{state | table_id: nil, total_chips: state.total_chips + chips_on_table}
+        IO.puts("==== 玩家 #{username} 离开桌子 #{table_id}")
+        {:reply, :ok, state}
     end
   end
 
