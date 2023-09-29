@@ -29,3 +29,55 @@
 .username-ready {
     @apply bg-green-700 text-white p-4 rounded-lg font-bold
 }
+
+.welcome-message {
+    @apply text-left font-semibold text-3xl
+}
+
+.welcome-username {
+    @apply text-red-700
+}
+
+#lobby {
+    @apply mt-8 max-w-4xl mx-auto
+}
+
+#lobby .wrapper {
+   @apply mb-4 align-middle inline-block min-w-full shadow overflow-hidden rounded-lg border-b border-slate-300
+}
+
+#lobby table th {
+  @apply bg-transparent px-6 py-6 border-b border-slate-300 bg-indigo-700 text-base font-medium uppercase tracking-wider text-center text-white
+}
+
+#lobby table th a {
+  @apply no-underline text-white
+}
+
+#lobby table td {
+  @apply px-6 py-4 whitespace-nowrap border-b border-slate-300 text-lg font-medium text-slate-900 text-center
+}
+
+#lobby table tbody {
+  @apply bg-white
+}
+
+#lobby table th.table-id {
+  @apply pl-12 text-left w-1/4
+}
+
+#lobby table td.table-id {
+  @apply pl-12 font-semibold text-left w-1/4
+}
+
+#lobby table td.players {
+  @apply w-1/5
+}
+
+#lobby table td.buyin {
+  @apply w-1/5
+}
+
+#lobby table td button {
+  @apply bg-green-600 py-2 px-12 text-center border border-transparent font-semibold text-base rounded-md text-white bg-green-500 transition duration-150 ease-in-out outline-none hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500
+}

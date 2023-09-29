@@ -5,8 +5,8 @@ defmodule SuperPoker.GameServer.TableManager do
     defstruct all_tables: []
   end
 
-  def all_table_info() do
-    GenServer.call(__MODULE__, :all_table_info)
+  def all_table_info(options) do
+    GenServer.call(__MODULE__, {:all_table_info, options})
   end
 
   def register_table(table_config) do
@@ -23,7 +23,13 @@ defmodule SuperPoker.GameServer.TableManager do
   end
 
   @impl GenServer
-  def handle_call(:all_table_info, _from, %State{all_tables: tables} = state) do
+  def handle_call(
+        {:all_table_info, %{sort_by: sort_by, sort_order: order}},
+        _from,
+        %State{all_tables: tables} = state
+      ) do
+    IO.inspect({sort_by, order}, label: "===== 这里根据排序")
+    tables = Enum.sort_by(tables, &Map.get(&1, sort_by), order)
     {:reply, tables, state}
   end
 

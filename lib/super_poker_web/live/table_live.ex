@@ -51,7 +51,9 @@ defmodule SuperPokerWeb.TableLive do
 
   def render(assigns) do
     ~H"""
-    <h1>Welcome <%= @current_user.email %></h1>
+    <div class="welcome-message">
+      Welcome <span class="welcome-username"><%= @current_user.email %></span>
+    </div>
     <div class="pot-info">
       POT: <%= @pot %><br /> Community Cards:
       <div class="mt-4 grid grid-cols-5 gap-4">
