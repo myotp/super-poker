@@ -40,3 +40,7 @@ PlayerServer.player_action("anna", {:raise, 30})
 - 参考12.Sorting给lobby加入排序
 - 参考13.Pagination给lobby加入分页
 - 参考5.Dynamic Form给raise设置range
+
+* TODO
+- 修改测试，确保HeadsupTableServer正确调用Player带上正确参数
+- 重构整理HeadsupTableServer，内部梳理，清晰简洁代码
