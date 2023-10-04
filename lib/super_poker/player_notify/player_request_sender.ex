@@ -1,6 +1,7 @@
 defmodule SuperPoker.PlayerNotify.PlayerRequestSender do
   alias SuperPoker.Player
 
+  @callback notify_players_info(any(), any()) :: :ok
   def notify_players_info(all_players, players_info) do
     Enum.each(all_players, fn username ->
       Player.notify_players_info(username, players_info)

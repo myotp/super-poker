@@ -98,7 +98,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
         bb: bb,
         buyin: buyin,
         rules: rules_mod,
-        player: player_mod
+        player: _player_mod
       }) do
     state = %State{
       max_players: max_players,
@@ -106,7 +106,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
       bb_amount: bb,
       buyin: buyin,
       rules_mod: rules_mod,
-      player_mod: player_mod
+      player_mod: player_mod()
     }
 
     TableManager.register_table(%TableConfig{
@@ -513,5 +513,9 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
   # =================== 其它 ======================
   defp log(msg) do
     Logger.info("#{inspect(self())}" <> msg, ansi_color: :cyan)
+  end
+
+  defp player_mod() do
+    Application.get_env(:super_poker, :player_mod, SuperPoker.PlayerNotify.PlayerRequestSender)
   end
 end

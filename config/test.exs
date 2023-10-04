@@ -37,3 +37,7 @@ config :phoenix, :plug_init_mode, :runtime
 
 config :super_poker,
   equity_random_rounds: 10_000
+
+# Mocks
+config :super_poker,
+  player_mod: MockPlayerRequestSender

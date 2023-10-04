@@ -3,6 +3,10 @@
 # TODO: 尽管有Emacs可以方便插入代码到shell，还是尽量不要那么用，而是通过测试，把代码攒出来
 defmodule SuperPoker.GameServer.HeadsupTableServerTest do
   use ExUnit.Case, async: false
+
+  import Mox
+  setup :set_mox_global
+
   alias SuperPoker.GameServer.HeadsupTableServer
   alias SuperPoker.GameServer.TableSupervisor
 
@@ -19,7 +23,9 @@ defmodule SuperPoker.GameServer.HeadsupTableServerTest do
   }
 
   describe "单挑牌桌测试" do
+    @tag :wip
     test "最多只能两个玩家加入" do
+      expect(MockPlayerRequestSender, :notify_players_info, 3, fn _, _ -> :ok end)
       TableSupervisor.start_table(%{@table_config | id: 9001})
       s = HeadsupTableServer.get_state(9001)
       assert s.p0 == nil
