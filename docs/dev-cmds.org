@@ -44,3 +44,12 @@ PlayerServer.player_action("anna", {:raise, 30})
 * TODO
 - 修改测试，确保HeadsupTableServer正确调用Player带上正确参数
 - 重构整理HeadsupTableServer，内部梳理，清晰简洁代码
+- OTP测试，如何正确启动GenServer进程
+- OTP测试，现有手工用supervisor启动GenServer进程有点异步
+- OTP测试，通过修改HeadsupTableServer单独State处理纯函数部分提取出来方便测试
+- 正确步骤：
+  1. 先添加mox调用到HeadsupTableServer，确保重构之后调用PS不会改变
+  2. 提取State相关操作的纯函数部分，到单独模块，并独立测试
+  3. 组合State模块与TS本身，并利用OTP测试完成新的简单测试的编写
+  4. 这样，相当于State的黑盒测试放到HeadsupTableState当中进行
+     而HeadsupTableServer的测试中，就偏向白盒，join_table之后，确保mox调用到了PS就好了
