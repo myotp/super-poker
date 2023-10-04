@@ -1,5 +1,14 @@
 # 这个模块用来辅助开发调试阶段使用，可以打印输入内容，方便开发调试
 defmodule SuperPoker.PlayerNotify.PlayerRequestPrinter do
+  alias SuperPoker.PlayerNotify.PlayerNotifierApi
+  @behaviour PlayerNotifierApi
+
+  @impl PlayerNotifierApi
+  def notify_players_info(_, _) do
+    # 一开始的时候没有此代码, 改造了之后, 加入behaviour之后就可以看出来缺失了
+    :ok
+  end
+
   def notify_blind_bet(all_players, blinds) do
     Enum.each(all_players, fn player ->
       IO.puts("通知玩家 #{player} 大小盲 #{inspect(blinds)}")

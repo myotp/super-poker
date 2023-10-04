@@ -1,5 +1,9 @@
 # 这个模块用来最终安静执行测试用的
 defmodule SuperPoker.PlayerNotify.PlayerRequestNull do
+  alias SuperPoker.PlayerNotify.PlayerNotifierApi
+  @behaviour PlayerNotifierApi
+
+  @impl PlayerNotifierApi
   def notify_players_info(_all_players, _players_info), do: :ok
   def notify_bets_info(_all_players, _bets_info), do: :ok
   def deal_hole_cards(_username, _cards), do: :ok
