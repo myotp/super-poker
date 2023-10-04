@@ -6,6 +6,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServerTest do
 
   import Mox
   setup :set_mox_global
+  setup :verify_on_exit!
 
   alias SuperPoker.GameServer.HeadsupTableServer
   alias SuperPoker.GameServer.TableSupervisor
@@ -22,10 +23,63 @@ defmodule SuperPoker.GameServer.HeadsupTableServerTest do
     player: SuperPoker.PlayerNotify.PlayerRequestNull
   }
 
+  defp unique_table_id() do
+    DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+  end
+
+  describe "玩家加入并离开牌桌测试" do
+    @tag :wip
+    test "启动新桌子, 玩家为空, 并且桌子状态正确" do
+      expect(MockPlayerRequestSender, :notify_players_info, 0, fn _, _ -> :ok end)
+      table_id = unique_table_id()
+      TableSupervisor.start_table(%{@table_config | id: table_id})
+      s = HeadsupTableServer.get_state(table_id)
+      assert s.p0 == nil
+      assert s.p1 == nil
+      assert s.table_status == :WAITING
+    end
+
+    @tag :wip
+    test "单个玩家加入空桌子, 并作为唯一玩家接到所有玩家信息通知" do
+      expect(MockPlayerRequestSender, :notify_players_info, 0, fn _, _ -> :ok end)
+      table_id = unique_table_id()
+      TableSupervisor.start_table(%{@table_config | id: table_id})
+      s = HeadsupTableServer.get_state(table_id)
+      assert s.p0 == nil
+      assert s.p1 == nil
+      assert s.table_status == :WAITING
+    end
+
+    @tag :wip
+    test "玩家加入已有一人桌子, 通知两人玩家信息给两个玩家" do
+      expect(MockPlayerRequestSender, :notify_players_info, 1, fn _, _ -> :ok end)
+      table_id = unique_table_id()
+      TableSupervisor.start_table(%{@table_config | id: table_id})
+      s = HeadsupTableServer.get_state(table_id)
+      assert HeadsupTableServer.join_table(table_id, "anna") == :ok
+      s = HeadsupTableServer.get_state(table_id)
+      assert s.p0.username == "anna"
+      assert s.p1 == nil
+      assert s.table_status == :WAITING
+    end
+
+    @tag :wip
+    test "玩家加入已有两人桌子, 此时桌子已满, 无法加入" do
+    end
+
+    @tag :wip
+    test "玩家加入桌子共两人, 其中一人离开, 桌子通知剩余玩家所有玩家信息" do
+    end
+
+    @tag :wip
+    test "" do
+    end
+  end
+
   describe "单挑牌桌测试" do
     @tag :wip
     test "最多只能两个玩家加入" do
-      expect(MockPlayerRequestSender, :notify_players_info, 3, fn _, _ -> :ok end)
+      expect(MockPlayerRequestSender, :notify_players_info, 2, fn _, _ -> :ok end)
       TableSupervisor.start_table(%{@table_config | id: 9001})
       s = HeadsupTableServer.get_state(9001)
       assert s.p0 == nil
