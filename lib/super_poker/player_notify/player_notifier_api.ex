@@ -1,3 +1,5 @@
 defmodule SuperPoker.PlayerNotify.PlayerNotifierApi do
-  @callback notify_players_info(any(), any()) :: :ok
+  @type username :: String.t()
+  @type player_info :: map()
+  @callback notify_players_info([username()], [player_info()]) :: :ok
 end

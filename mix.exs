@@ -53,7 +53,8 @@ defmodule SuperPoker.MixProject do
       {:credo, "~> 1.6"},
       {:swoosh, "~> 1.4"},
       {:hackney, "~> 1.19"},
-      {:mox, "~> 1.1", only: :test}
+      {:mox, "~> 1.1", only: :test},
+      {:hammox, "~> 0.7.0", only: :test}
     ]
   end
 

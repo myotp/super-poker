@@ -4,7 +4,7 @@
 defmodule SuperPoker.GameServer.HeadsupTableServerTest do
   use ExUnit.Case, async: false
 
-  import Mox
+  import Hammox
   setup :set_mox_global
   setup :verify_on_exit!
 
@@ -27,13 +27,12 @@ defmodule SuperPoker.GameServer.HeadsupTableServerTest do
     DateTime.utc_now() |> DateTime.to_unix(:microsecond)
   end
 
-  describe "玩家加入并离开牌桌测试" do
+  describe "一组顺序执行的玩家加入并离开牌桌测试" do
     @tag :wip
     test "启动新桌子, 玩家为空, 并且桌子状态正确" do
       expect(MockPlayerRequestSender, :notify_players_info, 0, fn _, _ -> :ok end)
-      table_id = unique_table_id()
-      TableSupervisor.start_table(%{@table_config | id: table_id})
-      s = HeadsupTableServer.get_state(table_id)
+      TableSupervisor.start_table(%{@table_config | id: 3001})
+      s = HeadsupTableServer.get_state(3001)
       assert s.p0 == nil
       assert s.p1 == nil
       assert s.table_status == :WAITING
@@ -41,11 +40,20 @@ defmodule SuperPoker.GameServer.HeadsupTableServerTest do
 
     @tag :wip
     test "单个玩家加入空桌子, 并作为唯一玩家接到所有玩家信息通知" do
-      expect(MockPlayerRequestSender, :notify_players_info, 0, fn _, _ -> :ok end)
-      table_id = unique_table_id()
-      TableSupervisor.start_table(%{@table_config | id: table_id})
-      s = HeadsupTableServer.get_state(table_id)
-      assert s.p0 == nil
+      expect(MockPlayerRequestSender, :notify_players_info, 1, fn ["anna"],
+                                                                  [
+                                                                    %{
+                                                                      username: "anna",
+                                                                      chips: 500,
+                                                                      status: :JOINED
+                                                                    }
+                                                                  ] ->
+        :ok
+      end)
+
+      assert HeadsupTableServer.join_table(3001, "anna") == :ok
+      s = HeadsupTableServer.get_state(3001)
+      assert s.p0.username == "anna"
       assert s.p1 == nil
       assert s.table_status == :WAITING
     end
@@ -55,6 +63,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServerTest do
       expect(MockPlayerRequestSender, :notify_players_info, 1, fn _, _ -> :ok end)
       table_id = unique_table_id()
       TableSupervisor.start_table(%{@table_config | id: table_id})
+      # FIXME, 这里supervisor似乎异步启动, 如何确保启动成功
       s = HeadsupTableServer.get_state(table_id)
       assert HeadsupTableServer.join_table(table_id, "anna") == :ok
       s = HeadsupTableServer.get_state(table_id)
