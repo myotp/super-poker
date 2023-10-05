@@ -18,8 +18,30 @@ HeadsupTableServer.player_action_done(9004, "bob", :check)
 http://localhost:4000/table
 
 # 命令行玩家加入
+
+# Test Case 加入/离开桌子
 Player.start_player("anna")
-Player.join_table("anna", 1001, 500)
+Player.start_player("bob")
+Player.start_player("cry")
+
+:ok = Player.join_table("anna", 1001, 500)
+:ok = Player.join_table("bob", 1001, 500)
+{:error, :table_full} = Player.join_table("cry", 1001, 500)
+
+:ok = Player.leave_table("anna")
+:ok = Player.join_table("cry", 1001, 500)
+
+# Test Case Start Game
+Player.start_player("anna")
+Player.start_player("bob")
+:ok = Player.join_table("anna", 1001, 500)
+:ok = Player.join_table("bob", 1001, 500)
+Player.start_game("anna")
+Player.start_game("bob")
+
+Player.player_action("anna", :call)
+Player.player_action("bob", :call)
+
 Player.start_game("anna")
 HeadsupTableServer.debug_state(1001)
 

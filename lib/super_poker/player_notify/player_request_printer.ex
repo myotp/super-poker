@@ -9,6 +9,12 @@ defmodule SuperPoker.PlayerNotify.PlayerRequestPrinter do
     :ok
   end
 
+  def notify_bets_info(all_players, bets) do
+    Enum.each(all_players, fn player ->
+      IO.puts("通知玩家 #{player} 下注 #{inspect(bets)}")
+    end)
+  end
+
   def notify_blind_bet(all_players, blinds) do
     Enum.each(all_players, fn player ->
       IO.puts("通知玩家 #{player} 大小盲 #{inspect(blinds)}")
@@ -19,7 +25,7 @@ defmodule SuperPoker.PlayerNotify.PlayerRequestPrinter do
     IO.puts("通知玩家 #{username} 发到手牌 #{inspect(cards)}")
   end
 
-  def notify_player_action(all_players, current_action_username, actions) do
+  def notify_player_todo_actions(all_players, current_action_username, actions) do
     Enum.each(all_players, fn player ->
       IO.puts("通知玩家 #{player} 当前等待 #{current_action_username} 可选操作 #{inspect(actions)}")
     end)

@@ -40,8 +40,8 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
   end
 
   # 最小化编写TDD
-  def new(%{max_players: max_players, buyin: buyin}) do
-    %State{buyin: buyin, max_players: max_players}
+  def new(%{max_players: max_players, sb: sb, bb: bb, buyin: buyin}) do
+    %State{buyin: buyin, sb_amount: sb, bb_amount: bb, max_players: max_players}
   end
 
   def join_table(%{players: players} = state, username) do
@@ -69,7 +69,7 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
 
       %Player{} = player ->
         state = %State{state | players: Map.put(players, player.pos, nil)}
-        {:ok, state}
+        {:ok, player.chips, state}
     end
   end
 
@@ -145,7 +145,7 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
       |> reset_cards()
       |> reset_players_bet()
 
-    {:ok, %State{state | table_status: :RUNNING}}
+    %State{state | table_status: :RUNNING}
   end
 
   defp change_table_status_to(state, new_status) do
@@ -206,12 +206,23 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
   # 只针对已经READY的玩家生成对战引擎数据
   # 后续这里还需要考虑button位置, 以及多人桌顺序轮替
   def generate_players_data_for_rules_engine(%State{max_players: max_players} = state) do
-    0..(max_players - 1)
-    |> Enum.map(fn pos ->
-      player = get_player_by_pos(state, pos)
-      {pos, player.chips}
-    end)
-    |> Map.new()
+    pos_chips =
+      0..(max_players - 1)
+      |> Enum.map(fn pos ->
+        player = get_player_by_pos(state, pos)
+        {pos, player.chips}
+      end)
+      |> Map.new()
+
+    pos_usernames =
+      0..(max_players - 1)
+      |> Enum.map(fn pos ->
+        player = get_player_by_pos(state, pos)
+        {pos, player.username}
+      end)
+      |> Map.new()
+
+    {pos_chips, pos_usernames}
   end
 
   # ==================== helper functions ===================

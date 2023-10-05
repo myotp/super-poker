@@ -5,9 +5,13 @@ defmodule SuperPoker.GameServer.HeadsupTableStateTest do
   describe "new/1" do
   end
 
+  defp default_table_config() do
+    %{max_players: 2, buyin: 500, sb: 5, bb: 10}
+  end
+
   describe "join_table/2" do
     test "第一位玩家正确加入" do
-      state = State.new(%{max_players: 2, buyin: 500})
+      state = State.new(default_table_config())
       assert {:ok, state} = State.join_table(state, "anna")
       assert state.players[0].pos == 0
       assert state.players[0].username == "anna"
@@ -16,14 +20,14 @@ defmodule SuperPoker.GameServer.HeadsupTableStateTest do
     end
 
     test "第二位玩家加入" do
-      state = State.new(%{max_players: 2, buyin: 500})
+      state = State.new(default_table_config())
       {:ok, state} = State.join_table(state, "anna")
       {:ok, state} = State.join_table(state, "bob")
       assert state.players[1].username == "bob"
     end
 
     test "第三位玩家无法加入两人桌" do
-      state = State.new(%{max_players: 2, buyin: 500})
+      state = State.new(default_table_config())
       {:ok, state} = State.join_table(state, "anna")
       {:ok, state} = State.join_table(state, "bob")
       assert {:error, :table_full} = State.join_table(state, "cry")
@@ -32,37 +36,37 @@ defmodule SuperPoker.GameServer.HeadsupTableStateTest do
     end
 
     test "玩家离开桌子" do
-      state = State.new(%{max_players: 2, buyin: 500})
+      state = State.new(default_table_config())
       {:ok, state} = State.join_table(state, "anna")
-      {:ok, state} = State.leave_table(state, "anna")
+      {:ok, 500, state} = State.leave_table(state, "anna")
       assert state.players[0] == nil
     end
 
     test "玩家离开的情况下可以正常处理" do
-      state = State.new(%{max_players: 2, buyin: 500})
+      state = State.new(default_table_config())
       {:ok, state} = State.join_table(state, "anna")
       {:ok, state} = State.join_table(state, "bob")
-      {:ok, state} = State.leave_table(state, "anna")
+      {:ok, _chips_left, state} = State.leave_table(state, "anna")
       assert {:ok, state} = State.join_table(state, "cry")
       assert state.players[0].username == "cry"
       assert state.players[1].username == "bob"
     end
 
     test "玩家重复加入桌子的情况" do
-      state = State.new(%{max_players: 2, buyin: 500})
+      state = State.new(default_table_config())
       {:ok, state} = State.join_table(state, "anna")
       {:error, :already_in_table} = State.join_table(state, "anna")
     end
 
     test "玩家离开不在的桌子" do
-      state = State.new(%{max_players: 2, buyin: 500})
+      state = State.new(default_table_config())
       {:error, :not_in_table} = State.leave_table(state, "anna")
     end
   end
 
   describe "player_start_game/2" do
     test "玩家start" do
-      state = State.new(%{max_players: 2, buyin: 500})
+      state = State.new(default_table_config())
       {:ok, state} = State.join_table(state, "anna")
       assert state.players[0].status == :JOINED
       {:ok, state} = State.player_start_game(state, "anna")
@@ -72,7 +76,7 @@ defmodule SuperPoker.GameServer.HeadsupTableStateTest do
 
   describe "can_table_start_game?/1" do
     test "两玩家都已经准备则游戏可以开始" do
-      state = State.new(%{max_players: 2, buyin: 500})
+      state = State.new(default_table_config())
       {:ok, state} = State.join_table(state, "anna")
       {:ok, state} = State.join_table(state, "bob")
       {:ok, state} = State.player_start_game(state, "anna")
@@ -84,17 +88,17 @@ defmodule SuperPoker.GameServer.HeadsupTableStateTest do
 
   describe "table_start_game!/1" do
     test "没有玩家就位, 桌子默认为WAITING状态" do
-      state = State.new(%{max_players: 2, buyin: 500})
+      state = State.new(default_table_config())
       assert state.table_status == :WAITING
     end
 
     test "两玩家都准备好之后, 桌子启动新游戏进入RUNNING状态" do
-      state = State.new(%{max_players: 2, buyin: 500})
+      state = State.new(default_table_config())
       {:ok, state} = State.join_table(state, "anna")
       {:ok, state} = State.join_table(state, "bob")
       {:ok, state} = State.player_start_game(state, "anna")
       {:ok, state} = State.player_start_game(state, "bob")
-      {:ok, state} = State.table_start_game!(state)
+      state = State.table_start_game!(state)
       assert state.table_status == :RUNNING
       assert [_ | _] = state.deck
       assert Enum.count(state.deck) == 52
@@ -107,12 +111,12 @@ defmodule SuperPoker.GameServer.HeadsupTableStateTest do
 
   describe "deal_hole_cards!/1" do
     test "测试给玩家发牌" do
-      state = State.new(%{max_players: 2, buyin: 500})
+      state = State.new(default_table_config())
       {:ok, state} = State.join_table(state, "anna")
       {:ok, state} = State.join_table(state, "bob")
       {:ok, state} = State.player_start_game(state, "anna")
       {:ok, state} = State.player_start_game(state, "bob")
-      {:ok, state} = State.table_start_game!(state)
+      state = State.table_start_game!(state)
       [c1, c2, c3, c4 | rest] = state.deck
       state = State.deal_hole_cards!(state)
       assert state.players_cards[0] == [c1, c2]
@@ -123,12 +127,12 @@ defmodule SuperPoker.GameServer.HeadsupTableStateTest do
 
   describe "hole_cards_info!/1" do
     test "生成给每个玩家自己的hole_card信息" do
-      state = State.new(%{max_players: 2, buyin: 500})
+      state = State.new(default_table_config())
       {:ok, state} = State.join_table(state, "anna")
       {:ok, state} = State.join_table(state, "bob")
       {:ok, state} = State.player_start_game(state, "anna")
       {:ok, state} = State.player_start_game(state, "bob")
-      {:ok, state} = State.table_start_game!(state)
+      state = State.table_start_game!(state)
       state = State.deal_hole_cards!(state)
 
       assert State.hole_cards_info!(state) == [
@@ -140,12 +144,12 @@ defmodule SuperPoker.GameServer.HeadsupTableStateTest do
 
   describe "deal_community_cards/2" do
     test "测试发牌" do
-      state = State.new(%{max_players: 2, buyin: 500})
+      state = State.new(default_table_config())
       {:ok, state} = State.join_table(state, "anna")
       {:ok, state} = State.join_table(state, "bob")
       {:ok, state} = State.player_start_game(state, "anna")
       {:ok, state} = State.player_start_game(state, "bob")
-      {:ok, state} = State.table_start_game!(state)
+      state = State.table_start_game!(state)
       [c1, c2, c3, c4, c5 | rest] = state.deck
       assert state.community_cards == []
       state = State.deal_community_cards!(state, :flop)
@@ -160,35 +164,35 @@ defmodule SuperPoker.GameServer.HeadsupTableStateTest do
 
   describe "all_players/1" do
     test "一个玩家的时候" do
-      state = State.new(%{max_players: 2, buyin: 500})
+      state = State.new(default_table_config())
       {:ok, state} = State.join_table(state, "anna")
       assert ["anna"] == State.all_players(state)
     end
 
     test "两个玩家" do
-      state = State.new(%{max_players: 2, buyin: 500})
+      state = State.new(default_table_config())
       {:ok, state} = State.join_table(state, "anna")
       {:ok, state} = State.join_table(state, "bob")
       assert ["anna", "bob"] == State.all_players(state)
     end
 
     test "玩家离开的情况" do
-      state = State.new(%{max_players: 2, buyin: 500})
+      state = State.new(default_table_config())
       {:ok, state} = State.join_table(state, "anna")
       {:ok, state} = State.join_table(state, "bob")
-      {:ok, state} = State.leave_table(state, "anna")
+      {:ok, _, state} = State.leave_table(state, "anna")
       assert ["bob"] == State.all_players(state)
     end
   end
 
   describe "players_info/1" do
     test "没有玩家的时候" do
-      state = State.new(%{max_players: 2, buyin: 500})
+      state = State.new(default_table_config())
       assert [] == State.players_info(state)
     end
 
     test "一个玩家加入" do
-      state = State.new(%{max_players: 2, buyin: 500})
+      state = State.new(default_table_config())
       {:ok, state} = State.join_table(state, "anna")
 
       assert [%{"anna" => %{username: "anna", chips: 500, status: :JOINED}}] ==
@@ -196,7 +200,7 @@ defmodule SuperPoker.GameServer.HeadsupTableStateTest do
     end
 
     test "两个玩家加入" do
-      state = State.new(%{max_players: 2, buyin: 500})
+      state = State.new(default_table_config())
       {:ok, state} = State.join_table(state, "anna")
       {:ok, state} = State.join_table(state, "bob")
 
@@ -210,10 +214,12 @@ defmodule SuperPoker.GameServer.HeadsupTableStateTest do
 
   describe "generate_players_data_for_rules_engine/1" do
     test "两玩家对战情况" do
-      state = State.new(%{max_players: 2, buyin: 500})
+      state = State.new(default_table_config())
       {:ok, state} = State.join_table(state, "anna")
       {:ok, state} = State.join_table(state, "bob")
-      assert %{0 => 500, 1 => 500} == State.generate_players_data_for_rules_engine(state)
+
+      assert {%{0 => 500, 1 => 500}, %{0 => "anna", 1 => "bob"}} ==
+               State.generate_players_data_for_rules_engine(state)
     end
   end
 end
