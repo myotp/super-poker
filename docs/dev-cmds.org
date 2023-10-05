@@ -38,9 +38,21 @@ Player.start_player("bob")
 :ok = Player.join_table("bob", 1001, 500)
 Player.start_game("anna")
 Player.start_game("bob")
-
+# preflop
 Player.player_action("anna", :call)
+Player.player_action("bob", {:raise, 15})
+Player.player_action("anna", :call)
+# flop
+Player.player_action("bob", :check)
+Player.player_action("anna", :check)
+#
+Player.player_action("bob", {:raise, 30})
+Player.player_action("anna", {:raise, 80})
 Player.player_action("bob", :call)
+#
+Player.player_action("bob", {:raise, 40})
+Player.player_action("anna", :call)
+# TODO ->> show hands
 
 Player.start_game("anna")
 HeadsupTableServer.debug_state(1001)
@@ -75,3 +87,28 @@ PlayerServer.player_action("anna", {:raise, 30})
   3. 组合State模块与TS本身，并利用OTP测试完成新的简单测试的编写
   4. 这样，相当于State的黑盒测试放到HeadsupTableState当中进行
      而HeadsupTableServer的测试中，就偏向白盒，join_table之后，确保mox调用到了PS就好了
+
+* TODO
+# Test Case Start Game
+Player.start_player("anna")
+Player.start_player("bob")
+:ok = Player.join_table("anna", 1001, 500)
+:ok = Player.join_table("bob", 1001, 500)
+Player.start_game("anna")
+Player.start_game("bob")
+# preflop
+Player.player_action("anna", :call)
+Player.player_action("bob", {:raise, 15})
+Player.player_action("anna", :call)
+# flop
+Player.player_action("bob", :check)
+Player.player_action("anna", :check)
+#
+Player.player_action("bob", {:raise, 30})
+Player.player_action("anna", {:raise, 80})
+Player.player_action("bob", :call)
+#
+Player.player_action("bob", {:raise, 40})
+Player.player_action("anna", :call)
+# TODO ->> show hands
+TODO ACTION: {:table, {:show_hands, {350, %{0 => 325, 1 => 325}}}}

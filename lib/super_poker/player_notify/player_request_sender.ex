@@ -11,9 +11,11 @@ defmodule SuperPoker.PlayerNotify.PlayerRequestSender do
     end)
   end
 
-  def notify_bets_info(all_players, blinds) do
+  def notify_bets_info(all_players, bets_info) do
+    IO.inspect(bets_info, label: "通知所有玩家目前下注最新信息")
+
     Enum.each(all_players, fn username ->
-      Player.notify_bets_info(username, blinds)
+      Player.notify_bets_info(username, bets_info)
     end)
   end
 
@@ -22,6 +24,8 @@ defmodule SuperPoker.PlayerNotify.PlayerRequestSender do
   end
 
   def notify_player_action(all_players, current_action_username, actions) do
+    IO.puts("==等待 #{current_action_username} 操作 #{inspect(actions)}")
+
     Enum.each(all_players, fn player ->
       Player.notify_player_todo_actions(player, current_action_username, actions)
     end)

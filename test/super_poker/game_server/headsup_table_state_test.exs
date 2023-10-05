@@ -152,11 +152,11 @@ defmodule SuperPoker.GameServer.HeadsupTableStateTest do
       state = State.table_start_game!(state)
       [c1, c2, c3, c4, c5 | rest] = state.deck
       assert state.community_cards == []
-      state = State.deal_community_cards!(state, :flop)
+      assert {[^c1, ^c2, ^c3], state} = State.deal_community_cards!(state, :flop)
       assert state.community_cards == [c1, c2, c3]
-      state = State.deal_community_cards!(state, :turn)
+      assert {[^c4], state} = State.deal_community_cards!(state, :turn)
       assert state.community_cards == [c1, c2, c3, c4]
-      state = State.deal_community_cards!(state, :river)
+      assert {[^c5], state} = State.deal_community_cards!(state, :river)
       assert state.community_cards == [c1, c2, c3, c4, c5]
       assert state.deck == rest
     end

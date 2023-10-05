@@ -193,7 +193,7 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
   def deal_community_cards!(%State{deck: deck, community_cards: community_cards} = state, street) do
     {cards, rest} = Deck.take_top_n_cards(deck, street_to_num_cards(street))
 
-    %State{state | deck: rest, community_cards: community_cards ++ cards}
+    {cards, %State{state | deck: rest, community_cards: community_cards ++ cards}}
   end
 
   defp street_to_num_cards(:flop), do: 3

@@ -42,15 +42,6 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
     GenServer.call(via_table_id(table_id), {:player_action_done, username, action})
   end
 
-  # for testing
-  def get_state(table_id) do
-    GenServer.call(via_table_id(table_id), :get_state)
-  end
-
-  def debug_state(table_id) do
-    GenServer.cast(via_table_id(table_id), :debug_state)
-  end
-
   defp via_table_id(table_id) do
     {:via, Registry, {SuperPoker.GameServer.TableRegistry, table_id}}
   end
@@ -67,9 +58,9 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
     ]
   end
 
-  defmodule Player do
-    defstruct [:pos, :username, :chips, :current_street_bet, :status]
-  end
+  # defmodule Player do
+  #   defstruct [:pos, :username, :chips, :current_street_bet, :status]
+  # end
 
   # ===================== OTP 回调部分 =================================
   def start_link(%{id: table_id} = args) do
@@ -149,28 +140,6 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
     notify_all_players_bets_info(state)
     {:reply, :ok, state, {:continue, :do_next_action}}
   end
-
-  # # 测试用
-  # def handle_call(:get_state, _from, state) do
-  #   {:reply, state, state}
-  # end
-
-  # defp notify_bets_info(%State{table: table, player_mod: player} = state) do
-  #   username0 = pos_to_username(state, 0)
-  #   username1 = pos_to_username(state, 1)
-
-  #   p0 = table.players[0]
-  #   p1 = table.players[1]
-
-  #   bets_info =
-  #     %{
-  #       :pot => table.pot,
-  #       username0 => %{chips_left: p0.chips, current_street_bet: p0.current_street_bet},
-  #       username1 => %{chips_left: p1.chips, current_street_bet: p1.current_street_bet}
-  #     }
-
-  #   player.notify_bets_info(all_players(state), bets_info)
-  # end
 
   @impl GenServer
   def handle_continue(
@@ -266,39 +235,33 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
 
   def handle_continue(
         :do_next_action,
-        %State{rules: %{next_action: action}} = state
+        %State{table_state: table_state, rules: %{next_action: {:table, {:deal, street}}}} = state
       ) do
-    IO.inspect(action, label: "TODO ACTION")
-    {:noreply, state}
+    log("牌桌即将发牌#{street}")
+    {cards, updated_table_state} = HeadsupTableState.deal_community_cards!(table_state, street)
+    all_players = HeadsupTableState.all_players(table_state)
+    player_mod().deal_community_cards(all_players, street, cards)
+
+    {:noreply, %State{state | table_state: updated_table_state},
+     {:continue, {:deal_done, street}}}
   end
 
-  # # 需要player操作的事件，就只是简单转发通知即可
-  # def handle_continue(
-  #       :do_next_action,
-  #       %State{table: %{next_action: {:player, {pos, actions}}}, player_mod: player} = state
-  #     ) do
-  #   username = pos_to_username(state, pos)
-  #   player.notify_player_action(all_players(state), username, actions)
-  #   {:noreply, state}
-  # end
+  def handle_continue({:deal_done, street}, %State{rules: rules, rules_mod: rules_mod} = state) do
+    rules = rules_mod.handle_action(rules, {:table, {:done, street}})
+    updated_state = %State{state | rules: rules}
+    # 发完牌之后, 清空之前一轮下注, 更新pot, 通知全体玩家
+    notify_all_players_bets_info(updated_state)
+    {:noreply, updated_state, {:continue, :do_next_action}}
+  end
 
-  # def handle_continue(
-  #       :do_next_action,
-  #       %State{table: %{next_action: {:table, {:deal, street}}}, player_mod: player} = state
-  #     ) do
-  #   log("牌桌即将发牌#{street}")
-  #   {cards, new_state} = take_cards(state, street)
-  #   player.deal_community_cards(all_players(new_state), street, cards)
-  #   {:noreply, new_state, {:continue, {:deal_done, street}}}
-  # end
+  # TODO TODO TODO
 
-  # # 到最后摊牌阶段，rules无从知道谁大谁小，只返回pot与每个人最后的剩余筹码，服务器决定赢者拿走多少
+  # 到最后摊牌阶段，rules无从知道谁大谁小，只返回pot与每个人最后的剩余筹码，服务器决定赢者拿走多少
   # def handle_continue(
   #       :do_next_action,
   #       %State{
-  #         table: %{next_action: {:table, {:show_hands, {pot, chips}}}},
-  #         player_cards: player_cards,
-  #         player_mod: player
+  #         rules: %{next_action: {:table, {:show_hands, {pot_amount, chips_left_by_rules_pos}}}},
+  #         table_state: table_state
   #       } = state
   #     ) do
   #   username0 = pos_to_username(state, 0)
@@ -351,6 +314,14 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
   #   end
   # end
 
+  def handle_continue(
+        :do_next_action,
+        %State{rules: %{next_action: action}} = state
+      ) do
+    IO.inspect(action, label: "TODO ACTION")
+    {:noreply, state}
+  end
+
   # # 一方投降，不用比牌，rules已经算好pot给谁，最终每个人多少了
   # def handle_continue(
   #       :do_next_action,
@@ -371,14 +342,6 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
   # end
 
   # # 牌桌操作事件顺序
-
-  # def handle_continue({:deal_done, street}, %State{table: table, rules_mod: mod} = state) do
-  #   log("完成发牌 #{inspect(street)}")
-  #   table = mod.handle_action(table, {:table, {:done, street}})
-  #   state = %State{state | table: table}
-  #   notify_bets_info(state)
-  #   {:noreply, state, {:continue, :do_next_action}}
-  # end
 
   # @impl GenServer
   # def handle_cast(:debug_state, state) do
