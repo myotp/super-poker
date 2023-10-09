@@ -14,9 +14,6 @@
 # 最终翻译成Rules所需的012整理化表示，由table_server去完成
 defmodule SuperPoker.GameServer.HeadsupTableServer do
   use GenServer
-  # alias SuperPoker.Core.Deck
-  # alias SuperPoker.Core.Hand
-  # alias SuperPoker.Core.Ranking
   alias SuperPoker.GameServer.TableManager
   alias SuperPoker.GameServer.TableConfig
   alias SuperPoker.GameServer.HeadsupTableState
@@ -311,40 +308,37 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
 
   def handle_continue(
         :do_next_action,
+        %State{
+          rules: %{next_action: {:winner, rules_pos, chips_left_by_rules_pos}},
+          rules_p2u: rules_p2u,
+          table_state: table_state
+        } = state
+      ) do
+    chips_after_game =
+      chips_left_by_rules_pos
+      |> Enum.map(fn {rules_pos, chips_left} -> {rules_p2u[rules_pos], chips_left} end)
+      |> Map.new()
+
+    table_state = HeadsupTableState.table_finish_game!(table_state, chips_after_game)
+
+    player_mod().notify_winner_result(
+      HeadsupTableState.all_players(table_state),
+      rules_p2u[rules_pos],
+      HeadsupTableState.chips_info!(table_state),
+      nil
+    )
+
+    {:noreply, %State{state | table_state: table_state}}
+  end
+
+  def handle_continue(
+        :do_next_action,
         %State{rules: %{next_action: action}} = state
       ) do
     IO.inspect(action, label: "TODO ACTION")
     {:noreply, state}
   end
 
-  # # 一方投降，不用比牌，rules已经算好pot给谁，最终每个人多少了
-  # def handle_continue(
-  #       :do_next_action,
-  #       %State{table: %{next_action: {:winner, pos, players_chips}}, player_mod: player} = state
-  #     ) do
-  #   username = pos_to_username(state, pos)
-  #   user0 = pos_to_username(state, 0)
-  #   user1 = pos_to_username(state, 1)
-  #   chips_by_username = %{user0 => players_chips[0], user1 => players_chips[1]}
-  #   IO.inspect(player, label: "具体player模块")
-  #   player.notify_winner_result(all_players(state), username, chips_by_username, nil)
-  #   state = put_in(state.p0.chips, players_chips[0])
-  #   state = put_in(state.p1.chips, players_chips[1])
-  #   # TODO: 更新筹码信息发送给客户端
-  #   state = put_in(state.p0.status, :JOINED)
-  #   state = put_in(state.p1.status, :JOINED)
-  #   {:noreply, %State{state | table_status: :WAITING}}
-  # end
-
-  # # 牌桌操作事件顺序
-
-  # @impl GenServer
-  # def handle_cast(:debug_state, state) do
-  #   IO.inspect(state, label: "牌桌状态")
-  #   {:noreply, state}
-  # end
-
-  # =================== 基于%State{} 的大操作函数 =====
   defp notify_players_info(table_state) do
     all_players = HeadsupTableState.all_players(table_state)
     players_info = HeadsupTableState.players_info(table_state)
@@ -357,58 +351,6 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
     all_players = HeadsupTableState.all_players(table_state)
     player_mod().notify_bets_info(all_players, bets_info)
   end
-
-  # defp reset_cards(state) do
-  #   %State{
-  #     state
-  #     | deck: Deck.seq_deck52() |> Deck.shuffle() |> Deck.top_n_cards(9),
-  #       player_cards: %{},
-  #       community_cards: []
-  #   }
-  # end
-
-  # defp take_cards(state, :flop) do
-  #   do_deal_community_cards(state, 3)
-  # end
-
-  # defp take_cards(state, :turn) do
-  #   do_deal_community_cards(state, 1)
-  # end
-
-  # defp take_cards(state, :river) do
-  #   do_deal_community_cards(state, 1)
-  # end
-
-  # defp do_deal_community_cards(%State{deck: deck, community_cards: community_cards} = state, n) do
-  #   {cards, rest} = Enum.split(deck, n)
-  #   {cards, %State{state | deck: rest, community_cards: community_cards ++ cards}}
-  # end
-
-  # defp all_players(state) do
-  #   [state.p0.username, state.p1.username]
-  # end
-
-  # defp pos_to_username(state, 0) do
-  #   state.p0.username
-  # end
-
-  # defp pos_to_username(state, 1) do
-  #   state.p1.username
-  # end
-
-  # defp username_to_pos(state, username) do
-  #   case {state.p0.username, state.p1.username} do
-  #     {^username, _} ->
-  #       0
-
-  #     {_, ^username} ->
-  #       1
-  #   end
-  # end
-
-  # defp generate_players_data_for_rules_engine(state) do
-  #   %{0 => state.p0.chips, 1 => state.p1.chips}
-  # end
 
   # 先保持原先的数据结构不变
   # %{
