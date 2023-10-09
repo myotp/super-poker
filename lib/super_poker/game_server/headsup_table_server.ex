@@ -254,65 +254,60 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
     {:noreply, updated_state, {:continue, :do_next_action}}
   end
 
-  # TODO TODO TODO
+  # # 到最后摊牌阶段，rules无从知道谁大谁小，只返回pot与每个人最后的剩余筹码，服务器决定赢者拿走多少
+  def handle_continue(
+        :do_next_action,
+        %State{
+          rules: %{next_action: {:table, {:show_hands, {pot_amount, chips_left_by_rules_pos}}}},
+          rules_p2u: rules_p2u,
+          table_state: table_state
+        } = state
+      ) do
+    chips_left_by_username =
+      chips_left_by_rules_pos
+      |> Enum.map(fn {rules_pos, chips_left} -> {rules_p2u[rules_pos], chips_left} end)
+      |> Map.new()
 
-  # 到最后摊牌阶段，rules无从知道谁大谁小，只返回pot与每个人最后的剩余筹码，服务器决定赢者拿走多少
-  # def handle_continue(
-  #       :do_next_action,
-  #       %State{
-  #         rules: %{next_action: {:table, {:show_hands, {pot_amount, chips_left_by_rules_pos}}}},
-  #         table_state: table_state
-  #       } = state
-  #     ) do
-  #   username0 = pos_to_username(state, 0)
-  #   username1 = pos_to_username(state, 1)
+    case HeadsupTableState.decide_winner(table_state) do
+      {winner_username, type, win5, lose5} when winner_username != nil ->
+        chips_after_game =
+          Map.update!(chips_left_by_username, winner_username, &(&1 + pot_amount))
 
-  #   case decide_winner_result(state) do
-  #     {nil, type, cards1, cards2} ->
-  #       half_pot = div(pot, 2)
+        table_state = HeadsupTableState.table_finish_game!(table_state, chips_after_game)
 
-  #       players_chips =
-  #         chips
-  #         |> Map.update!(0, fn current -> current + half_pot end)
-  #         |> Map.update!(1, fn current -> current + half_pot end)
+        # 先尽量忠实满足之前的接口
+        hole_cards = HeadsupTableState.hole_cards_info!(table_state) |> Map.new()
 
-  #       hole_cards = %{username0 => player_cards[0], username1 => player_cards[1]}
-  #       chips = %{username0 => players_chips[0], username1 => players_chips[1]}
+        player_mod().notify_winner_result(
+          HeadsupTableState.all_players(table_state),
+          winner_username,
+          HeadsupTableState.chips_info!(table_state),
+          {type, hole_cards, win5, lose5}
+        )
 
-  #       player.notify_winner_result(
-  #         all_players(state),
-  #         nil,
-  #         chips,
-  #         {type, hole_cards, cards1, cards2}
-  #       )
+        {:noreply, %State{state | table_state: table_state}}
 
-  #       state = put_in(state.p0.chips, players_chips[0])
-  #       state = put_in(state.p1.chips, players_chips[1])
-  #       state = put_in(state.p0.status, :JOINED)
-  #       state = put_in(state.p1.status, :JOINED)
-  #       {:noreply, %State{state | table_status: :WAITING}}
+      {nil, type, win5, lose5} ->
+        chips_after_game =
+          chips_left_by_username
+          |> Enum.map(fn {user, chips} -> {user, chips + div(pot_amount, 2)} end)
+          |> Map.new()
 
-  #     {winner_pos, type, win5, lose5} ->
-  #       username = pos_to_username(state, winner_pos)
-  #       players_chips = Map.update!(chips, winner_pos, fn current -> current + pot end)
-  #       chips = %{username0 => players_chips[0], username1 => players_chips[1]}
+        table_state = HeadsupTableState.table_finish_game!(table_state, chips_after_game)
 
-  #       hole_cards = %{username0 => player_cards[0], username1 => player_cards[1]}
+        # 先尽量忠实满足之前的接口
+        hole_cards = HeadsupTableState.hole_cards_info!(table_state) |> Map.new()
 
-  #       player.notify_winner_result(
-  #         all_players(state),
-  #         username,
-  #         chips,
-  #         {type, hole_cards, win5, lose5}
-  #       )
+        player_mod().notify_winner_result(
+          HeadsupTableState.all_players(table_state),
+          nil,
+          HeadsupTableState.chips_info!(table_state),
+          {type, hole_cards, win5, lose5}
+        )
 
-  #       state = put_in(state.p0.chips, players_chips[0])
-  #       state = put_in(state.p1.chips, players_chips[1])
-  #       state = put_in(state.p0.status, :JOINED)
-  #       state = put_in(state.p1.status, :JOINED)
-  #       {:noreply, %State{state | table_status: :WAITING}}
-  #   end
-  # end
+        {:noreply, %State{state | table_state: table_state}}
+    end
+  end
 
   def handle_continue(
         :do_next_action,
@@ -370,27 +365,6 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
   #       player_cards: %{},
   #       community_cards: []
   #   }
-  # end
-
-  # defp decide_winner_result(%State{community_cards: community_cards} = state) do
-  #   5 = Enum.count(community_cards)
-
-  #   cards0 = state.player_cards[0]
-  #   cards1 = state.player_cards[1]
-
-  #   rank0 = Ranking.run(cards0 ++ community_cards)
-  #   rank1 = Ranking.run(cards1 ++ community_cards)
-
-  #   case Hand.compare(cards0, cards1, community_cards) do
-  #     :win ->
-  #       {0, rank0.type, rank0.best_hand, rank1.best_hand}
-
-  #     :lose ->
-  #       {1, rank1.type, rank1.best_hand, rank0.best_hand}
-
-  #     :tie ->
-  #       {nil, rank0.type, rank0.best_hand, rank1.best_hand}
-  #   end
   # end
 
   # defp take_cards(state, :flop) do

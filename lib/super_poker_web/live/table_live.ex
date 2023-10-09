@@ -188,6 +188,12 @@ defmodule SuperPokerWeb.TableLive do
     {:noreply, socket}
   end
 
+  def handle_event("game-action-raise", _, socket) do
+    socket = assign(socket, :my_turn, false)
+    Player.player_action(my_username(socket), {:raise, 100})
+    {:noreply, socket}
+  end
+
   defp my_username(socket), do: socket.assigns.username
 
   defp player_status(:EMPTY), do: "username-empty"

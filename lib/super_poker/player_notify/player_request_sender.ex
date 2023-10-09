@@ -55,6 +55,8 @@ defmodule SuperPoker.PlayerNotify.PlayerRequestSender do
 
   # 正常一方获胜，另一方失败
   def notify_winner_result(all_players, winner, players_chips, {_type, hole_cards, win5, _lose5}) do
+    IO.puts("通知最终结果333, 获胜方为: #{winner}, 最终筹码更新为: #{inspect(players_chips)}")
+
     Enum.each(all_players, fn player ->
       Player.notify_winner_result(player, winner, players_chips, {hole_cards, win5})
     end)

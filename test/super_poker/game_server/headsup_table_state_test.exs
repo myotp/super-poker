@@ -1,5 +1,7 @@
 defmodule SuperPoker.GameServer.HeadsupTableStateTest do
   alias SuperPoker.GameServer.HeadsupTableState, as: State
+  alias SuperPoker.Core.Hand
+
   use ExUnit.Case
 
   describe "new/1" do
@@ -15,8 +17,8 @@ defmodule SuperPoker.GameServer.HeadsupTableStateTest do
       assert {:ok, state} = State.join_table(state, "anna")
       assert state.players[0].pos == 0
       assert state.players[0].username == "anna"
-      assert state.players[0].chips == 500
       assert state.players[0].status == :JOINED
+      assert state.chips["anna"] == 500
     end
 
     test "第二位玩家加入" do
@@ -109,6 +111,23 @@ defmodule SuperPoker.GameServer.HeadsupTableStateTest do
     end
   end
 
+  describe "table_finish_game!/1" do
+    test "接到结束牌局通知后桌子结束游戏并回到WAITING状态" do
+      state = State.new(default_table_config())
+      {:ok, state} = State.join_table(state, "anna")
+      {:ok, state} = State.join_table(state, "bob")
+      {:ok, state} = State.player_start_game(state, "anna")
+      {:ok, state} = State.player_start_game(state, "bob")
+      state = State.table_start_game!(state)
+      state = State.table_finish_game!(state, %{"anna" => 600, "bob" => 400})
+      assert state.table_status == :WAITING
+      assert state.chips["anna"] == 600
+      assert state.chips["bob"] == 400
+      assert state.players[0].status == :JOINED
+      assert state.players[1].status == :JOINED
+    end
+  end
+
   describe "deal_hole_cards!/1" do
     test "测试给玩家发牌" do
       state = State.new(default_table_config())
@@ -195,7 +214,7 @@ defmodule SuperPoker.GameServer.HeadsupTableStateTest do
       state = State.new(default_table_config())
       {:ok, state} = State.join_table(state, "anna")
 
-      assert [%{"anna" => %{username: "anna", chips: 500, status: :JOINED}}] ==
+      assert [%{username: "anna", chips: 500, status: :JOINED}] ==
                State.players_info(state)
     end
 
@@ -205,10 +224,11 @@ defmodule SuperPoker.GameServer.HeadsupTableStateTest do
       {:ok, state} = State.join_table(state, "bob")
 
       assert [
-               %{"anna" => %{username: "anna", chips: 500, status: :JOINED}},
-               %{"bob" => %{username: "bob", chips: 500, status: :JOINED}}
-             ] ==
-               State.players_info(state)
+               %{username: "anna", chips: 500, status: :JOINED},
+               %{username: "bob", chips: 500, status: :JOINED}
+             ]
+             |> Enum.sort() ==
+               State.players_info(state) |> Enum.sort()
     end
   end
 
@@ -220,6 +240,57 @@ defmodule SuperPoker.GameServer.HeadsupTableStateTest do
 
       assert {%{0 => 500, 1 => 500}, %{0 => "anna", 1 => "bob"}} ==
                State.generate_players_data_for_rules_engine(state)
+    end
+  end
+
+  describe "decide_winner/1" do
+    test "两玩家最后摊牌比大小玩家1获胜" do
+      state = State.new(default_table_config())
+      {:ok, state} = State.join_table(state, "anna")
+      {:ok, state} = State.join_table(state, "bob")
+
+      state =
+        state
+        |> Map.put(:community_cards, Hand.from_string("QH JH TH 9H 8H"))
+        |> Map.put(:players_cards, %{
+          0 => Hand.from_string("AH KH"),
+          1 => Hand.from_string("7H 6H")
+        })
+
+      assert {"anna", :royal_flush, _, _} = State.decide_winner(state)
+    end
+
+    test "两玩家最后摊牌比大小玩家2获胜" do
+      state = State.new(default_table_config())
+      {:ok, state} = State.join_table(state, "anna")
+      {:ok, state} = State.join_table(state, "bob")
+
+      state =
+        state
+        |> Map.put(:community_cards, Hand.from_string("QH JH TH 9H 8H"))
+        |> Map.put(:players_cards, %{
+          0 => Hand.from_string("7H AS"),
+          1 => Hand.from_string("KH 7S")
+        })
+
+      bob_best = Hand.from_string("KH QH JH TH 9H")
+      assert {"bob", :straight_flush, ^bob_best, _} = State.decide_winner(state)
+    end
+
+    test "两玩家最后摊牌比大小平局的情况" do
+      state = State.new(default_table_config())
+      {:ok, state} = State.join_table(state, "anna")
+      {:ok, state} = State.join_table(state, "bob")
+
+      state =
+        state
+        |> Map.put(:community_cards, Hand.from_string("AH KH QH JH TH"))
+        |> Map.put(:players_cards, %{
+          0 => Hand.from_string("2H 2D"),
+          1 => Hand.from_string("2S 2C")
+        })
+
+      assert {nil, :royal_flush, _, _} = State.decide_winner(state)
     end
   end
 end

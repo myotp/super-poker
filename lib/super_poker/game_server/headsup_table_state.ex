@@ -10,7 +10,7 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
   现阶段故意简化, 桌子只能坐两个人, 且至少两人才能开始, 所以现在无论是从Table角度看
   还是Rules角度看, pos永远都是[0,1], 只不过随着button移动位置两边01对应的应该是不同玩家
   """
-  alias SuperPoker.Core.Deck
+  alias SuperPoker.Core.{Deck, Hand, Ranking}
 
   @min_players 2
   # 这里的主要变化
@@ -31,12 +31,13 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
       table_status: :WAITING,
       # 动态玩家信息
       players: %{},
+      chips: %{},
       button_pos: 0
     ]
   end
 
   defmodule Player do
-    defstruct [:pos, :username, :chips, :current_street_bet, :status]
+    defstruct [:pos, :username, :current_street_bet, :status]
   end
 
   # 最小化编写TDD
@@ -44,7 +45,7 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
     %State{buyin: buyin, sb_amount: sb, bb_amount: bb, max_players: max_players}
   end
 
-  def join_table(%{players: players} = state, username) do
+  def join_table(%{players: players, chips: chips} = state, username) do
     case username_to_pos(state, username) do
       nil ->
         case first_available_pos(state) do
@@ -52,8 +53,14 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
             {:error, :table_full}
 
           pos ->
-            player = %Player{pos: pos, username: username, chips: state.buyin, status: :JOINED}
-            state = %State{state | players: Map.put(players, pos, player)}
+            player = %Player{pos: pos, username: username, status: :JOINED}
+
+            state = %State{
+              state
+              | players: Map.put(players, pos, player),
+                chips: Map.put(chips, username, state.buyin)
+            }
+
             {:ok, state}
         end
 
@@ -62,19 +69,26 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
     end
   end
 
-  def leave_table(%State{players: players} = state, username) do
+  def leave_table(%State{players: players, chips: chips} = state, username) do
     case get_player_by_username(state, username) do
       nil ->
         {:error, :not_in_table}
 
       %Player{} = player ->
-        state = %State{state | players: Map.put(players, player.pos, nil)}
-        {:ok, player.chips, state}
+        chips_left = chips[username]
+
+        state = %State{
+          state
+          | players: Map.put(players, player.pos, nil),
+            chips: Map.put(chips, username, nil)
+        }
+
+        {:ok, chips_left, state}
     end
   end
 
   # TODO: 后续替换为players_info_map实现
-  def players_info(%State{max_players: max_players} = state) do
+  def players_info(%State{max_players: max_players, chips: chips} = state) do
     0..(max_players - 1)
     |> Enum.map(fn pos ->
       case get_player_by_pos(state, pos) do
@@ -83,18 +97,16 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
 
         %Player{} = player ->
           %{
-            player.username => %{
-              username: player.username,
-              chips: player.chips,
-              status: player.status
-            }
+            username: player.username,
+            chips: chips[player.username],
+            status: player.status
           }
       end
     end)
     |> Enum.reject(&is_nil/1)
   end
 
-  def players_info_map(%State{max_players: max_players} = state) do
+  def players_info_map(%State{max_players: max_players, chips: chips} = state) do
     0..(max_players - 1)
     |> Enum.map(fn pos ->
       case get_player_by_pos(state, pos) do
@@ -105,13 +117,17 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
           {player.username,
            %{
              username: player.username,
-             chips: player.chips,
+             chips: chips[player.username],
              status: player.status
            }}
       end
     end)
     |> Enum.reject(&is_nil/1)
     |> Map.new()
+  end
+
+  def chips_info!(%State{chips: chips}) do
+    chips
   end
 
   def all_players(state) do
@@ -139,17 +155,43 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
   end
 
   def table_start_game!(%State{table_status: :WAITING} = state) do
-    state =
-      state
-      |> change_table_status_to(:RUNNING)
-      |> reset_cards()
-      |> reset_players_bet()
+    state
+    |> change_table_status_to(:RUNNING)
+    |> reset_cards()
+    |> reset_players_bet()
+  end
 
-    %State{state | table_status: :RUNNING}
+  def table_finish_game!(%State{} = state, chips_left_from_rules_engine) do
+    state
+    |> change_table_status_to(:WAITING)
+    |> change_players_status_to(:JOINED)
+    |> update_players_chips(chips_left_from_rules_engine)
   end
 
   defp change_table_status_to(state, new_status) do
     %State{state | table_status: new_status}
+  end
+
+  defp change_players_status_to(
+         %State{max_players: max_players, players: players} = state,
+         new_status
+       ) do
+    players =
+      Enum.reduce(0..(max_players - 1), players, fn pos, acc ->
+        player = players[pos]
+        Map.put(acc, pos, %{player | status: new_status})
+      end)
+
+    %State{state | players: players}
+  end
+
+  defp update_players_chips(%State{chips: chips} = state, chips_left_from_rules_engine) do
+    updated_chips =
+      Enum.reduce(chips_left_from_rules_engine, chips, fn {username, chips_left}, acc ->
+        Map.put(acc, username, chips_left)
+      end)
+
+    %State{state | chips: updated_chips}
   end
 
   defp reset_cards(%State{} = state) do
@@ -205,12 +247,14 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
   # 创建rules的时候, 需要整理成[0,1]交给rules以及对应关系
   # 只针对已经READY的玩家生成对战引擎数据
   # 后续这里还需要考虑button位置, 以及多人桌顺序轮替
-  def generate_players_data_for_rules_engine(%State{max_players: max_players} = state) do
+  def generate_players_data_for_rules_engine(
+        %State{max_players: max_players, chips: chips} = state
+      ) do
     pos_chips =
       0..(max_players - 1)
       |> Enum.map(fn pos ->
         player = get_player_by_pos(state, pos)
-        {pos, player.chips}
+        {pos, chips[player.username]}
       end)
       |> Map.new()
 
@@ -223,6 +267,23 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
       |> Map.new()
 
     {pos_chips, pos_usernames}
+  end
+
+  def decide_winner(state) do
+    [{username1, cards1}, {username2, cards2}] = hole_cards_info!(state)
+    rank1 = Ranking.run(cards1 ++ state.community_cards)
+    rank2 = Ranking.run(cards2 ++ state.community_cards)
+
+    case Hand.compare(cards1, cards2, state.community_cards) do
+      :win ->
+        {username1, rank1.type, rank1.best_hand, rank2.best_hand}
+
+      :lose ->
+        {username2, rank2.type, rank2.best_hand, rank1.best_hand}
+
+      :tie ->
+        {nil, rank1.type, rank1.best_hand, rank2.best_hand}
+    end
   end
 
   # ==================== helper functions ===================
