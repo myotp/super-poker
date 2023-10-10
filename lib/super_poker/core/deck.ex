@@ -31,4 +31,9 @@ defmodule SuperPoker.Core.Deck do
     {cards, _} = Enum.split(deck, n)
     cards
   end
+
+  def take_top_n_cards(deck, n) do
+    {cards, rest} = Enum.split(deck, n)
+    {cards, rest}
+  end
 end

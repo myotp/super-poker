@@ -52,7 +52,9 @@ defmodule SuperPoker.MixProject do
       {:mix_test_watch, "~> 1.1", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.6"},
       {:swoosh, "~> 1.4"},
-      {:hackney, "~> 1.19"}
+      {:hackney, "~> 1.19"},
+      {:mox, "~> 1.1", only: :test},
+      {:hammox, "~> 0.7.0", only: :test}
     ]
   end
 

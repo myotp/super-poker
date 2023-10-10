@@ -1,5 +1,16 @@
 # 这个模块用来辅助开发调试阶段使用，可以打印输入内容，方便开发调试
 defmodule SuperPoker.PlayerNotify.PlayerRequestPrinter do
+  def notify_players_info(_, _) do
+    # 一开始的时候没有此代码, 改造了之后, 加入behaviour之后就可以看出来缺失了
+    :ok
+  end
+
+  def notify_bets_info(all_players, bets) do
+    Enum.each(all_players, fn player ->
+      IO.puts("通知玩家 #{player} 下注 #{inspect(bets)}")
+    end)
+  end
+
   def notify_blind_bet(all_players, blinds) do
     Enum.each(all_players, fn player ->
       IO.puts("通知玩家 #{player} 大小盲 #{inspect(blinds)}")
@@ -10,7 +21,7 @@ defmodule SuperPoker.PlayerNotify.PlayerRequestPrinter do
     IO.puts("通知玩家 #{username} 发到手牌 #{inspect(cards)}")
   end
 
-  def notify_player_action(all_players, current_action_username, actions) do
+  def notify_player_todo_actions(all_players, current_action_username, actions) do
     Enum.each(all_players, fn player ->
       IO.puts("通知玩家 #{player} 当前等待 #{current_action_username} 可选操作 #{inspect(actions)}")
     end)

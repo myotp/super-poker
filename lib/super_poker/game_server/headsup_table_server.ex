@@ -14,11 +14,9 @@
 # 最终翻译成Rules所需的012整理化表示，由table_server去完成
 defmodule SuperPoker.GameServer.HeadsupTableServer do
   use GenServer
-  alias SuperPoker.Core.Deck
-  alias SuperPoker.Core.Hand
-  alias SuperPoker.Core.Ranking
   alias SuperPoker.GameServer.TableManager
   alias SuperPoker.GameServer.TableConfig
+  alias SuperPoker.GameServer.HeadsupTableState
   require Logger
 
   @moduledoc """
@@ -41,13 +39,8 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
     GenServer.call(via_table_id(table_id), {:player_action_done, username, action})
   end
 
-  # for testing
-  def get_state(table_id) do
-    GenServer.call(via_table_id(table_id), :get_state)
-  end
-
-  def debug_state(table_id) do
-    GenServer.cast(via_table_id(table_id), :debug_state)
+  def ping(table_id) do
+    GenServer.call(via_table_id(table_id), :ping)
   end
 
   defp via_table_id(table_id) do
@@ -57,32 +50,18 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
   # ===================== 定义主体 %State{} 结构 =======================
   defmodule State do
     defstruct [
-      # 静态牌桌本身信息
-      :max_players,
-      :sb_amount,
-      :bb_amount,
-      :buyin,
       # 注入可替换规则引擎
       :rules_mod,
-      # 注入依赖方便测试
-      :player_mod,
-      # 动态牌桌信息
-      table: nil,
-      table_status: :WAITING,
-      # 动态牌信息
-      deck: [],
-      community_cards: [],
-      player_cards: %{},
-      # 动态玩家信息
-      p0: nil,
-      p1: nil,
-      button_pos: 0
+      :rules,
+      :rules_p2u,
+      :rules_u2p,
+      :table_state
     ]
   end
 
-  defmodule Player do
-    defstruct [:pos, :username, :chips, :current_street_bet, :status]
-  end
+  # defmodule Player do
+  #   defstruct [:pos, :username, :chips, :current_street_bet, :status]
+  # end
 
   # ===================== OTP 回调部分 =================================
   def start_link(%{id: table_id} = args) do
@@ -91,23 +70,17 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
   end
 
   @impl GenServer
-  def init(%{
-        id: table_id,
-        max_players: max_players,
-        sb: sb,
-        bb: bb,
-        buyin: buyin,
-        rules: rules_mod,
-        player: player_mod
-      }) do
-    state = %State{
-      max_players: max_players,
-      sb_amount: sb,
-      bb_amount: bb,
-      buyin: buyin,
-      rules_mod: rules_mod,
-      player_mod: player_mod
-    }
+  def init(
+        %{
+          id: table_id,
+          max_players: max_players,
+          sb: sb,
+          bb: bb,
+          buyin: buyin,
+          rules: rules_mod
+        } = args
+      ) do
+    table_state = HeadsupTableState.new(args)
 
     TableManager.register_table(%TableConfig{
       table_id: table_id,
@@ -117,401 +90,300 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
       buyin: buyin
     })
 
-    log("启动牌桌进程 #{inspect(state)}")
-    {:ok, state}
+    {:ok, %State{table_state: table_state, rules_mod: rules_mod}}
   end
 
   @impl GenServer
-  def handle_call({:join_table, username}, _from, state) do
-    case {state.p0, state.p1} do
-      {%Player{}, %Player{}} ->
-        {:reply, {:error, :table_full}, state}
+  def handle_call(:ping, _from, state) do
+    {:reply, :pong, state}
+  end
 
-      {nil, _} ->
-        p0 = %Player{pos: 0, username: username, chips: state.buyin, status: :JOINED}
-        state = %State{state | p0: p0}
-        notify_players_info(state)
-        {:reply, :ok, state}
+  def handle_call({:join_table, username}, _from, %State{table_state: table_state} = state) do
+    IO.inspect(username, label: "新玩家加入桌子")
 
-      {_, nil} ->
-        p1 = %Player{pos: 1, username: username, chips: state.buyin, status: :JOINED}
-        state = %State{state | p1: p1}
-        notify_players_info(state)
-        {:reply, :ok, state}
+    case HeadsupTableState.join_table(table_state, username) do
+      {:ok, updated_table_state} ->
+        notify_players_info(updated_table_state)
+        {:reply, :ok, %State{state | table_state: updated_table_state}}
+
+      error ->
+        {:reply, error, state}
     end
   end
 
-  def handle_call({:leave_table, username}, _from, state) do
-    # FIXME: 这里, struct不能直接x[:a][:b]的多层自动返回nil如何更优雅的访问?
-    username0 =
-      state
-      |> Map.get(:p0)
-      |> case do
-        nil ->
-          nil
+  def handle_call({:leave_table, username}, _from, %State{table_state: table_state} = state) do
+    case HeadsupTableState.leave_table(table_state, username) do
+      {:ok, chips_on_table, updated_table_state} ->
+        notify_players_info(updated_table_state)
+        {:reply, {:ok, chips_on_table}, %State{state | table_state: updated_table_state}}
 
-        user ->
-          user.username
-      end
-
-    username1 =
-      state
-      |> Map.get(:p1)
-      |> case do
-        nil ->
-          nil
-
-        user ->
-          user.username
-      end
-
-    case {username0, username1} do
-      {^username, _} ->
-        # FIXME: 这里如何更优雅的通知所有玩家此人离开, 并优雅的返回chips
-        chips_on_table = state.p0.chips
-        state = %State{state | p0: nil}
-        notify_players_info(state)
-        {:reply, {:ok, chips_on_table}, state}
-
-      {_, ^username} ->
-        chips_on_table = state.p1.chips
-        state = %State{state | p1: nil}
-        notify_players_info(state)
-        {:reply, {:ok, chips_on_table}, state}
-
-      other ->
-        IO.inspect(other, label: "HELP!!!!! =========>>>>>>>>>>")
-        {:error, :not_in_table, state}
+      {:error, _reason} = error ->
+        {:reply, error, state}
     end
   end
 
-  def handle_call({:start_game, username}, _from, state) do
-    state =
-      case {state.p0.username, state.p1.username} do
-        {^username, _} ->
-          put_in(state.p0.current_street_bet, 0)
-          put_in(state.p0.status, :READY)
+  def handle_call({:start_game, username}, _from, %State{table_state: table_state} = state) do
+    case HeadsupTableState.player_start_game(table_state, username) do
+      {:ok, updated_table_state} ->
+        notify_players_info(updated_table_state)
 
-        {_, ^username} ->
-          put_in(state.p1.current_street_bet, 0)
-          put_in(state.p1.status, :READY)
-      end
+        {:reply, :ok, %State{state | table_state: updated_table_state},
+         {:continue, :maybe_table_start_game}}
 
-    notify_players_info(state)
-    {:reply, :ok, state, {:continue, :maybe_start_game}}
+      {:error, _reason} = error ->
+        {:reply, error, state}
+    end
   end
 
   def handle_call(
         {:player_action_done, username, action},
         _from,
-        %State{table: table, rules_mod: mod} = state
+        %State{rules: rules, rules_mod: rules_mod, rules_u2p: u2p} = state
       ) do
     IO.puts("===>>>> [WIP] 收到玩家 #{username} 行动 #{inspect(action)}")
-    table = mod.handle_action(table, {:player, {username_to_pos(state, username), action}})
-    IO.inspect(table, label: "最新下注之后的table")
-    state = %State{state | table: table}
-    notify_bets_info(state)
+    rules = rules_mod.handle_action(rules, {:player, {u2p[username], action}})
+    IO.inspect(rules, label: "最新下注之后的rules")
+    state = %State{state | rules: rules}
+    notify_all_players_bets_info(state)
     {:reply, :ok, state, {:continue, :do_next_action}}
   end
 
-  # 测试用
-  def handle_call(:get_state, _from, state) do
-    {:reply, state, state}
-  end
+  @impl GenServer
+  def handle_continue(
+        :maybe_table_start_game,
+        %State{table_state: table_state, rules_mod: rules_mod} = state
+      ) do
+    if HeadsupTableState.can_table_start_game?(table_state) do
+      {rules_pos_chips, rules_p2u} =
+        HeadsupTableState.generate_players_data_for_rules_engine(table_state)
 
-  defp notify_bets_info(%State{table: table, player_mod: player} = state) do
-    username0 = pos_to_username(state, 0)
-    username1 = pos_to_username(state, 1)
+      rules_u2p =
+        rules_p2u
+        |> Enum.map(fn {pos, username} -> {username, pos} end)
+        |> Map.new()
 
-    p0 = table.players[0]
-    p1 = table.players[1]
+      IO.inspect(rules_pos_chips, label: "===>>> Rules对应DATA")
 
-    bets_info =
-      %{
-        :pot => table.pot,
-        username0 => %{chips_left: p0.chips, current_street_bet: p0.current_street_bet},
-        username1 => %{chips_left: p1.chips, current_street_bet: p1.current_street_bet}
+      rules =
+        rules_mod.new(
+          rules_pos_chips,
+          table_state.button_pos,
+          {table_state.sb_amount, table_state.bb_amount}
+        )
+
+      updated_table_state = HeadsupTableState.table_start_game!(table_state)
+      IO.inspect(updated_table_state, label: "更新过后的TableState")
+
+      state = %State{
+        state
+        | table_state: updated_table_state,
+          rules: rules,
+          rules_p2u: rules_p2u,
+          rules_u2p: rules_u2p
       }
 
-    player.notify_bets_info(all_players(state), bets_info)
-  end
-
-  @impl GenServer
-  def handle_continue(:maybe_start_game, state) do
-    if all_players_ready?(state) do
-      {:noreply, start_new_game(state), {:continue, :do_next_action}}
+      {:noreply, state, {:continue, :do_next_action}}
     else
       {:noreply, state}
     end
   end
 
-  def handle_continue(
-        :do_next_action,
-        %State{table: %{next_action: {:table, {:notify_blind_bet, blinds}}}, player_mod: player} =
-          state
-      ) do
-    # blinds =
-    #   blinds
-    #   |> Enum.map(fn {pos, amount} -> {pos_to_username(state, pos), amount} end)
-    #   |> Map.new()
-
-    p0 = pos_to_username(state, 0)
-    p1 = pos_to_username(state, 1)
-
-    p0_chips_left = state.p0.chips - blinds[0]
-    p1_chips_left = state.p1.chips - blinds[1]
-
-    bets_info =
-      %{
-        :pot => 0,
-        p0 => %{chips_left: p0_chips_left, current_street_bet: blinds[0]},
-        p1 => %{chips_left: p1_chips_left, current_street_bet: blinds[1]}
-      }
-
-    put_in(state.p0.chips, p0_chips_left)
-    put_in(state.p0.current_street_bet, blinds[0])
-    put_in(state.p1.chips, p1_chips_left)
-    put_in(state.p1.current_street_bet, blinds[1])
-
-    # FIXME: 这里, 之后应该不用特别特殊化处理, 可以盲注也当作一般情况更新就好
-    log("blinds: #{inspect(bets_info)}")
-    player.notify_bets_info(all_players(state), bets_info)
-    {:noreply, state, {:continue, :notify_blind_bet_done}}
-  end
-
-  # 需要player操作的事件，就只是简单转发通知即可
-  def handle_continue(
-        :do_next_action,
-        %State{table: %{next_action: {:player, {pos, actions}}}, player_mod: player} = state
-      ) do
-    username = pos_to_username(state, pos)
-    player.notify_player_action(all_players(state), username, actions)
-    {:noreply, state}
-  end
-
-  def handle_continue(
-        :do_next_action,
-        %State{table: %{next_action: {:table, {:deal, street}}}, player_mod: player} = state
-      ) do
-    log("牌桌即将发牌#{street}")
-    {cards, new_state} = take_cards(state, street)
-    player.deal_community_cards(all_players(new_state), street, cards)
-    {:noreply, new_state, {:continue, {:deal_done, street}}}
-  end
-
-  # 到最后摊牌阶段，rules无从知道谁大谁小，只返回pot与每个人最后的剩余筹码，服务器决定赢者拿走多少
+  # FIXME: 这里事件之后, 可以用通用的下注信息来处理盲注下注, 故此步骤可以省略
   def handle_continue(
         :do_next_action,
         %State{
-          table: %{next_action: {:table, {:show_hands, {pot, chips}}}},
-          player_cards: player_cards,
-          player_mod: player
-        } = state
+          rules: %{next_action: {:table, {:notify_blind_bet, _blinds}}}
+        } =
+          state
       ) do
-    username0 = pos_to_username(state, 0)
-    username1 = pos_to_username(state, 1)
-
-    case decide_winner_result(state) do
-      {nil, type, cards1, cards2} ->
-        half_pot = div(pot, 2)
-
-        players_chips =
-          chips
-          |> Map.update!(0, fn current -> current + half_pot end)
-          |> Map.update!(1, fn current -> current + half_pot end)
-
-        hole_cards = %{username0 => player_cards[0], username1 => player_cards[1]}
-        chips = %{username0 => players_chips[0], username1 => players_chips[1]}
-
-        player.notify_winner_result(
-          all_players(state),
-          nil,
-          chips,
-          {type, hole_cards, cards1, cards2}
-        )
-
-        state = put_in(state.p0.chips, players_chips[0])
-        state = put_in(state.p1.chips, players_chips[1])
-        state = put_in(state.p0.status, :JOINED)
-        state = put_in(state.p1.status, :JOINED)
-        {:noreply, %State{state | table_status: :WAITING}}
-
-      {winner_pos, type, win5, lose5} ->
-        username = pos_to_username(state, winner_pos)
-        players_chips = Map.update!(chips, winner_pos, fn current -> current + pot end)
-        chips = %{username0 => players_chips[0], username1 => players_chips[1]}
-
-        hole_cards = %{username0 => player_cards[0], username1 => player_cards[1]}
-
-        player.notify_winner_result(
-          all_players(state),
-          username,
-          chips,
-          {type, hole_cards, win5, lose5}
-        )
-
-        state = put_in(state.p0.chips, players_chips[0])
-        state = put_in(state.p1.chips, players_chips[1])
-        state = put_in(state.p0.status, :JOINED)
-        state = put_in(state.p1.status, :JOINED)
-        {:noreply, %State{state | table_status: :WAITING}}
-    end
+    {:noreply, state, {:continue, :notify_blind_bet_done}}
   end
 
-  # 一方投降，不用比牌，rules已经算好pot给谁，最终每个人多少了
+  def handle_continue(
+        :notify_blind_bet_done,
+        %State{
+          rules: rules,
+          rules_mod: rules_mod
+        } =
+          state
+      ) do
+    rules = rules_mod.handle_action(rules, {:table, :notify_blind_bet_done})
+    IO.inspect(rules, label: "============ 通知完盲注的RULES")
+    updated_state = %State{state | rules: rules}
+    notify_all_players_bets_info(updated_state)
+    {:noreply, %State{state | rules: rules}, {:continue, :deal_hole_cards}}
+  end
+
+  def handle_continue(:deal_hole_cards, %State{table_state: table_state} = state) do
+    updated_table_state = HeadsupTableState.deal_hole_cards!(table_state)
+    hole_cards_info = HeadsupTableState.hole_cards_info!(updated_table_state)
+
+    Enum.each(hole_cards_info, fn {username, hole_cards} ->
+      player_mod().deal_hole_cards(username, hole_cards)
+    end)
+
+    IO.inspect(updated_table_state, label: "发完2张牌之后的state")
+    {:noreply, %State{state | table_state: updated_table_state}, {:continue, :do_next_action}}
+  end
+
+  # 下一步玩家动作
   def handle_continue(
         :do_next_action,
-        %State{table: %{next_action: {:winner, pos, players_chips}}, player_mod: player} = state
+        %State{
+          table_state: table_state,
+          rules: %{next_action: {:player, {pos, actions}}},
+          rules_p2u: usernames
+        } = state
       ) do
-    username = pos_to_username(state, pos)
-    user0 = pos_to_username(state, 0)
-    user1 = pos_to_username(state, 1)
-    chips_by_username = %{user0 => players_chips[0], user1 => players_chips[1]}
-    IO.inspect(player, label: "具体player模块")
-    player.notify_winner_result(all_players(state), username, chips_by_username, nil)
-    state = put_in(state.p0.chips, players_chips[0])
-    state = put_in(state.p1.chips, players_chips[1])
-    # TODO: 更新筹码信息发送给客户端
-    state = put_in(state.p0.status, :JOINED)
-    state = put_in(state.p1.status, :JOINED)
-    {:noreply, %State{state | table_status: :WAITING}}
-  end
-
-  # 牌桌操作事件顺序
-  def handle_continue(:notify_blind_bet_done, %State{table: table, rules_mod: mod} = state) do
-    table = mod.handle_action(table, {:table, :notify_blind_bet_done})
-    {:noreply, %State{state | table: table}, {:continue, :deal_hole_cards}}
-  end
-
-  def handle_continue(:deal_hole_cards, %State{deck: deck, player_mod: player} = state) do
-    [c1, c2, c3, c4 | rest] = deck
-    p0 = pos_to_username(state, 0)
-    p1 = pos_to_username(state, 1)
-    cards0 = [c1, c2]
-    cards1 = [c3, c4]
-    player_cards = %{0 => cards0, 1 => cards1}
-    player.deal_hole_cards(p0, cards0)
-    player.deal_hole_cards(p1, cards1)
-
-    {:noreply, %State{state | deck: rest, player_cards: player_cards, community_cards: []},
-     {:continue, :do_next_action}}
-  end
-
-  def handle_continue({:deal_done, street}, %State{table: table, rules_mod: mod} = state) do
-    log("完成发牌 #{inspect(street)}")
-    table = mod.handle_action(table, {:table, {:done, street}})
-    state = %State{state | table: table}
-    notify_bets_info(state)
-    {:noreply, state, {:continue, :do_next_action}}
-  end
-
-  @impl GenServer
-  def handle_cast(:debug_state, state) do
-    IO.inspect(state, label: "牌桌状态")
+    all_players = HeadsupTableState.all_players(table_state)
+    player_mod().notify_player_todo_actions(all_players, usernames[pos], actions)
     {:noreply, state}
   end
 
-  # =================== 基于%State{} 的大操作函数 =====
-  defp notify_players_info(%State{player_mod: player} = state) do
-    players_info =
-      [state.p0, state.p1]
-      |> Enum.reject(&is_nil/1)
-      |> Enum.map(fn player -> Map.take(player, [:username, :chips, :status]) end)
+  def handle_continue(
+        :do_next_action,
+        %State{table_state: table_state, rules: %{next_action: {:table, {:deal, street}}}} = state
+      ) do
+    log("牌桌即将发牌#{street}")
+    {cards, updated_table_state} = HeadsupTableState.deal_community_cards!(table_state, street)
+    all_players = HeadsupTableState.all_players(table_state)
+    player_mod().deal_community_cards(all_players, street, cards)
 
-    all_players = players_info |> Enum.map(fn player -> player.username end)
+    {:noreply, %State{state | table_state: updated_table_state},
+     {:continue, {:deal_done, street}}}
+  end
+
+  def handle_continue({:deal_done, street}, %State{rules: rules, rules_mod: rules_mod} = state) do
+    rules = rules_mod.handle_action(rules, {:table, {:done, street}})
+    updated_state = %State{state | rules: rules}
+    # 发完牌之后, 清空之前一轮下注, 更新pot, 通知全体玩家
+    notify_all_players_bets_info(updated_state)
+    {:noreply, updated_state, {:continue, :do_next_action}}
+  end
+
+  # # 到最后摊牌阶段，rules无从知道谁大谁小，只返回pot与每个人最后的剩余筹码，服务器决定赢者拿走多少
+  def handle_continue(
+        :do_next_action,
+        %State{
+          rules: %{next_action: {:table, {:show_hands, {pot_amount, chips_left_by_rules_pos}}}},
+          rules_p2u: rules_p2u,
+          table_state: table_state
+        } = state
+      ) do
+    chips_left_by_username =
+      chips_left_by_rules_pos
+      |> Enum.map(fn {rules_pos, chips_left} -> {rules_p2u[rules_pos], chips_left} end)
+      |> Map.new()
+
+    case HeadsupTableState.decide_winner(table_state) do
+      {winner_username, type, win5, lose5} when winner_username != nil ->
+        chips_after_game =
+          Map.update!(chips_left_by_username, winner_username, &(&1 + pot_amount))
+
+        table_state = HeadsupTableState.table_finish_game!(table_state, chips_after_game)
+
+        # 先尽量忠实满足之前的接口
+        hole_cards = HeadsupTableState.hole_cards_info!(table_state) |> Map.new()
+
+        player_mod().notify_winner_result(
+          HeadsupTableState.all_players(table_state),
+          winner_username,
+          HeadsupTableState.chips_info!(table_state),
+          {type, hole_cards, win5, lose5}
+        )
+
+        {:noreply, %State{state | table_state: table_state}}
+
+      {nil, type, win5, lose5} ->
+        chips_after_game =
+          chips_left_by_username
+          |> Enum.map(fn {user, chips} -> {user, chips + div(pot_amount, 2)} end)
+          |> Map.new()
+
+        table_state = HeadsupTableState.table_finish_game!(table_state, chips_after_game)
+
+        # 先尽量忠实满足之前的接口
+        hole_cards = HeadsupTableState.hole_cards_info!(table_state) |> Map.new()
+
+        player_mod().notify_winner_result(
+          HeadsupTableState.all_players(table_state),
+          nil,
+          HeadsupTableState.chips_info!(table_state),
+          {type, hole_cards, win5, lose5}
+        )
+
+        {:noreply, %State{state | table_state: table_state}}
+    end
+  end
+
+  def handle_continue(
+        :do_next_action,
+        %State{
+          rules: %{next_action: {:winner, rules_pos, chips_left_by_rules_pos}},
+          rules_p2u: rules_p2u,
+          table_state: table_state
+        } = state
+      ) do
+    chips_after_game =
+      chips_left_by_rules_pos
+      |> Enum.map(fn {rules_pos, chips_left} -> {rules_p2u[rules_pos], chips_left} end)
+      |> Map.new()
+
+    table_state = HeadsupTableState.table_finish_game!(table_state, chips_after_game)
+
+    player_mod().notify_winner_result(
+      HeadsupTableState.all_players(table_state),
+      rules_p2u[rules_pos],
+      HeadsupTableState.chips_info!(table_state),
+      nil
+    )
+
+    {:noreply, %State{state | table_state: table_state}}
+  end
+
+  def handle_continue(
+        :do_next_action,
+        %State{rules: %{next_action: action}} = state
+      ) do
+    IO.inspect(action, label: "TODO ACTION")
+    {:noreply, state}
+  end
+
+  defp notify_players_info(table_state) do
+    all_players = HeadsupTableState.all_players(table_state)
+    IO.inspect(all_players, label: "桌子所有玩家")
+    players_info = HeadsupTableState.players_info(table_state)
     IO.inspect(all_players, label: "桌子通知所有玩家")
-    player.notify_players_info(all_players, players_info)
+    player_mod().notify_players_info(all_players, players_info)
   end
 
-  defp start_new_game(%State{rules_mod: rules_mod, sb_amount: sb, bb_amount: bb} = state) do
-    players_data = generate_players_data_for_rules_engine(state)
-    table = rules_mod.new(players_data, state.button_pos, {sb, bb})
-    state = reset_cards(state)
-    %State{state | table_status: :RUNNING, table: table}
+  def notify_all_players_bets_info(%State{table_state: table_state, rules: rules, rules_p2u: p2u}) do
+    bets_info = generate_bets_info(rules, p2u)
+    all_players = HeadsupTableState.all_players(table_state)
+    player_mod().notify_bets_info(all_players, bets_info)
   end
 
-  defp reset_cards(state) do
-    %State{
-      state
-      | deck: Deck.seq_deck52() |> Deck.shuffle() |> Deck.top_n_cards(9),
-        player_cards: %{},
-        community_cards: []
-    }
+  # 先保持原先的数据结构不变
+  # %{
+  #   :pot => 0,
+  #   "anna" => %{chips_left: 490, current_street_bet: 10},
+  #   "bob" => %{chips_left: 495, current_street_bet: 5}
+  # }
+  def generate_bets_info(%{pot: pot, players: players}, pos_usernames) do
+    players_bets_info =
+      Enum.map(players, fn {rules_pos, p} ->
+        {pos_usernames[rules_pos],
+         %{chips_left: p.chips, current_street_bet: p.current_street_bet}}
+      end)
+
+    Map.new([{:pot, pot} | players_bets_info])
   end
 
-  defp decide_winner_result(%State{community_cards: community_cards} = state) do
-    5 = Enum.count(community_cards)
-
-    cards0 = state.player_cards[0]
-    cards1 = state.player_cards[1]
-
-    rank0 = Ranking.run(cards0 ++ community_cards)
-    rank1 = Ranking.run(cards1 ++ community_cards)
-
-    case Hand.compare(cards0, cards1, community_cards) do
-      :win ->
-        {0, rank0.type, rank0.best_hand, rank1.best_hand}
-
-      :lose ->
-        {1, rank1.type, rank1.best_hand, rank0.best_hand}
-
-      :tie ->
-        {nil, rank0.type, rank0.best_hand, rank1.best_hand}
-    end
-  end
-
-  defp take_cards(state, :flop) do
-    do_deal_community_cards(state, 3)
-  end
-
-  defp take_cards(state, :turn) do
-    do_deal_community_cards(state, 1)
-  end
-
-  defp take_cards(state, :river) do
-    do_deal_community_cards(state, 1)
-  end
-
-  defp do_deal_community_cards(%State{deck: deck, community_cards: community_cards} = state, n) do
-    {cards, rest} = Enum.split(deck, n)
-    {cards, %State{state | deck: rest, community_cards: community_cards ++ cards}}
-  end
-
-  defp all_players(state) do
-    [state.p0.username, state.p1.username]
-  end
-
-  defp pos_to_username(state, 0) do
-    state.p0.username
-  end
-
-  defp pos_to_username(state, 1) do
-    state.p1.username
-  end
-
-  defp username_to_pos(state, username) do
-    case {state.p0.username, state.p1.username} do
-      {^username, _} ->
-        0
-
-      {_, ^username} ->
-        1
-    end
-  end
-
-  defp all_players_ready?(state) do
-    case {state.p0.status, state.p1.status} do
-      {:READY, :READY} -> true
-      _ -> false
-    end
-  end
-
-  defp generate_players_data_for_rules_engine(state) do
-    %{0 => state.p0.chips, 1 => state.p1.chips}
-  end
-
-  # =================== 其它 ======================
   defp log(msg) do
     Logger.info("#{inspect(self())}" <> msg, ansi_color: :cyan)
+  end
+
+  defp player_mod() do
+    Application.get_env(:super_poker, :player_mod, SuperPoker.PlayerNotify.PlayerRequestSender)
   end
 end
