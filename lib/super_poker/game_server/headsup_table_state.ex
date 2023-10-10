@@ -45,7 +45,7 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
     %State{buyin: buyin, sb_amount: sb, bb_amount: bb, max_players: max_players}
   end
 
-  def join_table(%{players: players, chips: chips} = state, username) do
+  def join_table(%{} = state, username) do
     case username_to_pos(state, username) do
       nil ->
         case first_available_pos(state) do
@@ -55,11 +55,10 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
           pos ->
             player = %Player{pos: pos, username: username, status: :JOINED}
 
-            state = %State{
+            state =
               state
-              | players: Map.put(players, pos, player),
-                chips: Map.put(chips, username, state.buyin)
-            }
+              |> put_in([Access.key(:players), pos], player)
+              |> put_in([Access.key(:chips), username], state.buyin)
 
             {:ok, state}
         end
@@ -69,7 +68,7 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
     end
   end
 
-  def leave_table(%State{players: players, chips: chips} = state, username) do
+  def leave_table(%State{chips: chips} = state, username) do
     case get_player_by_username(state, username) do
       nil ->
         {:error, :not_in_table}
@@ -77,33 +76,27 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
       %Player{} = player ->
         chips_left = chips[username]
 
-        state = %State{
+        state =
           state
-          | players: Map.put(players, player.pos, nil),
-            chips: Map.put(chips, username, nil)
-        }
+          |> put_in([Access.key(:players), Access.key(player.pos)], nil)
+          |> put_in([Access.key(:chips), username], nil)
 
         {:ok, chips_left, state}
     end
   end
 
   # TODO: 后续替换为players_info_map实现
-  def players_info(%State{max_players: max_players, chips: chips} = state) do
-    0..(max_players - 1)
-    |> Enum.map(fn pos ->
-      case get_player_by_pos(state, pos) do
-        nil ->
-          nil
-
-        %Player{} = player ->
-          %{
-            username: player.username,
-            chips: chips[player.username],
-            status: player.status
-          }
-      end
-    end)
+  def players_info(%State{players: players, chips: chips}) do
+    players
+    |> Map.values()
     |> Enum.reject(&is_nil/1)
+    |> Enum.map(fn %Player{} = player ->
+      %{
+        username: player.username,
+        chips: chips[player.username],
+        status: player.status
+      }
+    end)
   end
 
   def players_info_map(%State{players: players, chips: chips}) do
