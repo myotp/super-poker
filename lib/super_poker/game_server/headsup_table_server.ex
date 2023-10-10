@@ -99,6 +99,8 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
   end
 
   def handle_call({:join_table, username}, _from, %State{table_state: table_state} = state) do
+    IO.inspect(username, label: "新玩家加入桌子")
+
     case HeadsupTableState.join_table(table_state, username) do
       {:ok, updated_table_state} ->
         notify_players_info(updated_table_state)
@@ -349,6 +351,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
 
   defp notify_players_info(table_state) do
     all_players = HeadsupTableState.all_players(table_state)
+    IO.inspect(all_players, label: "桌子所有玩家")
     players_info = HeadsupTableState.players_info(table_state)
     IO.inspect(all_players, label: "桌子通知所有玩家")
     player_mod().notify_players_info(all_players, players_info)
