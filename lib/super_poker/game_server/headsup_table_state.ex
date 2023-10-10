@@ -106,23 +106,19 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
     |> Enum.reject(&is_nil/1)
   end
 
-  def players_info_map(%State{max_players: max_players, chips: chips} = state) do
-    0..(max_players - 1)
-    |> Enum.map(fn pos ->
-      case get_player_by_pos(state, pos) do
-        nil ->
-          nil
-
-        %Player{} = player ->
-          {player.username,
-           %{
-             username: player.username,
-             chips: chips[player.username],
-             status: player.status
-           }}
-      end
-    end)
+  def players_info_map(%State{players: players, chips: chips}) do
+    players
+    |> Map.values()
     |> Enum.reject(&is_nil/1)
+    |> Enum.map(fn player ->
+      %{
+        player.username => %{
+          username: player.username,
+          chips: chips[player.username],
+          status: player.status
+        }
+      }
+    end)
     |> Map.new()
   end
 
@@ -130,9 +126,11 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
     chips
   end
 
-  def all_players(state) do
-    players_info_map(state)
-    |> Enum.map(fn {username, _player} -> username end)
+  def all_players(%State{players: players}) do
+    Map.values(players)
+    # 把:status放入Access.key就可以了
+    |> get_in([Access.all(), Access.key(:username)])
+    |> Enum.reject(&is_nil/1)
   end
 
   def player_start_game(%State{players: players} = state, username) do
