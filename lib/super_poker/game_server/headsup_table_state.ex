@@ -138,7 +138,7 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
   def player_start_game(%State{players: players} = state, username) do
     case get_player_by_username(state, username) do
       %Player{} = player ->
-        updated_players = %{players | player.pos => %{player | status: :READY}}
+        updated_players = put_in(players, [player.pos, Access.key(:status)], :READY)
         {:ok, %State{state | players: updated_players}}
     end
   end
