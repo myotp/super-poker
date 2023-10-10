@@ -1,16 +1,17 @@
 defmodule SuperPoker.PlayerNotify.PlayerRequestSender do
   alias SuperPoker.Player
 
-  alias SuperPoker.PlayerNotify.PlayerNotifierApi
-  @behaviour PlayerNotifierApi
+  alias SuperPoker.PlayerNotify.PlayerNotifierBehaviour
+  @behaviour PlayerNotifierBehaviour
 
-  @impl PlayerNotifierApi
+  @impl PlayerNotifierBehaviour
   def notify_players_info(all_players, players_info) do
     Enum.each(all_players, fn username ->
       Player.notify_players_info(username, players_info)
     end)
   end
 
+  @impl PlayerNotifierBehaviour
   def notify_bets_info(all_players, bets_info) do
     IO.inspect(bets_info, label: "通知所有玩家目前下注最新信息")
 
@@ -19,11 +20,13 @@ defmodule SuperPoker.PlayerNotify.PlayerRequestSender do
     end)
   end
 
+  @impl PlayerNotifierBehaviour
   def deal_hole_cards(username, hole_cards) do
     Player.deal_hole_cards(username, hole_cards)
   end
 
-  def notify_player_action(all_players, current_action_username, actions) do
+  @impl PlayerNotifierBehaviour
+  def notify_player_todo_actions(all_players, current_action_username, actions) do
     IO.puts("==等待 #{current_action_username} 操作 #{inspect(actions)}")
 
     Enum.each(all_players, fn player ->
@@ -31,6 +34,7 @@ defmodule SuperPoker.PlayerNotify.PlayerRequestSender do
     end)
   end
 
+  @impl PlayerNotifierBehaviour
   def deal_community_cards(all_players, street, cards) do
     # TODO: 发牌信息完成
     Enum.each(all_players, fn player ->

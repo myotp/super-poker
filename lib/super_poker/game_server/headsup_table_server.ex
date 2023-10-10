@@ -39,6 +39,10 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
     GenServer.call(via_table_id(table_id), {:player_action_done, username, action})
   end
 
+  def ping(table_id) do
+    GenServer.call(via_table_id(table_id), :ping)
+  end
+
   defp via_table_id(table_id) do
     {:via, Registry, {SuperPoker.GameServer.TableRegistry, table_id}}
   end
@@ -90,6 +94,10 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
   end
 
   @impl GenServer
+  def handle_call(:ping, _from, state) do
+    {:reply, :pong, state}
+  end
+
   def handle_call({:join_table, username}, _from, %State{table_state: table_state} = state) do
     case HeadsupTableState.join_table(table_state, username) do
       {:ok, updated_table_state} ->
@@ -226,7 +234,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
         } = state
       ) do
     all_players = HeadsupTableState.all_players(table_state)
-    player_mod().notify_player_action(all_players, usernames[pos], actions)
+    player_mod().notify_player_todo_actions(all_players, usernames[pos], actions)
     {:noreply, state}
   end
 

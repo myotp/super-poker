@@ -1,1 +1,1 @@
-Mox.defmock(MockPlayerRequestSender, for: SuperPoker.PlayerNotify.PlayerNotifierApi)
+Mox.defmock(MockPlayerRequestSender, for: SuperPoker.PlayerNotify.PlayerNotifierBehaviour)
