@@ -143,12 +143,12 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
     end
   end
 
-  def can_table_start_game?(%State{max_players: max_players} = state) do
+  def can_table_start_game?(%State{players: players} = _state) do
     num_ready_players =
-      0..(max_players - 1)
-      |> Enum.map(fn pos -> get_player_by_pos(state, pos) end)
-      |> Enum.reject(&is_nil/1)
-      |> Enum.filter(fn player -> player.status == :READY end)
+      Map.values(players)
+      # 把:status放入Access.key就可以了
+      |> get_in([Access.all(), Access.key(:status)])
+      |> Enum.filter(&(&1 == :READY))
       |> Enum.count()
 
     num_ready_players >= @min_players
