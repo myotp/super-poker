@@ -6,7 +6,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServerTest do
   use ExUnit.Case, async: false
 
   # 这个模块的测试必须只能顺序运行, 需要--seed 0的时候才行
-  @moduletag :skip
+  @moduletag :seed0
 
   import Hammox
   setup :set_mox_global
