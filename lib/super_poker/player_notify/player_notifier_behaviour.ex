@@ -8,4 +8,10 @@ defmodule SuperPoker.PlayerNotify.PlayerNotifierBehaviour do
   @callback deal_hole_cards(username(), cards()) :: :ok
   @callback notify_player_todo_actions([username()], username(), list()) :: :ok
   @callback deal_community_cards([username()], street :: atom(), cards()) :: :ok
+  @callback notify_winner_result(
+              [username()],
+              winner :: username() | nil,
+              chips_info :: map(),
+              tuple() | nil
+            ) :: :ok
 end

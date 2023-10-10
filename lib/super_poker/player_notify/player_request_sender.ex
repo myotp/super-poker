@@ -44,6 +44,7 @@ defmodule SuperPoker.PlayerNotify.PlayerRequestSender do
   end
 
   # 一方fold，另一方自动获胜，不用比牌
+  @impl PlayerNotifierBehaviour
   def notify_winner_result(all_players, winner, player_chips, nil) do
     Enum.each(all_players, fn player ->
       Player.notify_winner_result(player, winner, player_chips, {%{}, []})

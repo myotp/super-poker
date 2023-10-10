@@ -141,7 +141,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServerTest do
       # 3.1 开始anna preflop行动
       MockPlayerRequestSender
       # Anna call之后通知所有玩家下注信息更新
-      |> expect(:notify_bets_info, 1, fn all, bets_info ->
+      |> expect(:notify_bets_info, 1, fn ["anna", "bob"], bets_info ->
         assert bets_info == %{
                  :pot => 0,
                  "anna" => %{chips_left: 490, current_street_bet: 10},
@@ -165,8 +165,8 @@ defmodule SuperPoker.GameServer.HeadsupTableServerTest do
       # 3.2 开始bob preflop行动
       MockPlayerRequestSender
       # 3.3 bob check之后更新bets info信息
-      |> expect(:notify_bets_info, 1, fn all, bets_info ->
-        IO.inspect(bets_info, label: "MOX BET")
+      |> expect(:notify_bets_info, 1, fn ["anna", "bob"], bets_info ->
+        assert %{pot: 20} = bets_info
         :ok
       end)
       # 3.4 发flop公共牌
@@ -175,8 +175,13 @@ defmodule SuperPoker.GameServer.HeadsupTableServerTest do
         :ok
       end)
       # 3.5 发完一轮公共牌之后, 下注移入pot, 更新发给玩家
-      |> expect(:notify_bets_info, 1, fn all, bets_info ->
-        IO.inspect(bets_info, label: "MOX BET")
+      |> expect(:notify_bets_info, 1, fn ["anna", "bob"], bets_info ->
+        assert bets_info == %{
+                 :pot => 20,
+                 "anna" => %{chips_left: 490, current_street_bet: 0},
+                 "bob" => %{chips_left: 490, current_street_bet: 0}
+               }
+
         :ok
       end)
       # 3.6通知flop发牌之后下一步该先从bob开始操作了
@@ -190,18 +195,242 @@ defmodule SuperPoker.GameServer.HeadsupTableServerTest do
       :pong = HeadsupTableServer.ping(table_id)
     end
 
-    # test "玩家加入已有一人桌子, 通知两人玩家信息给两个玩家" do
-    #   expect(MockPlayerRequestSender, :notify_players_info, 1, fn _, _ -> :ok end)
-    #   table_id = unique_table_id()
-    #   TableSupervisor.start_table(%{@table_config | id: table_id})
-    #   # FIXME, 这里supervisor似乎异步启动, 如何确保启动成功
-    #   s = HeadsupTableServer.get_state(table_id)
-    #   assert HeadsupTableServer.join_table(table_id, "anna") == :ok
-    #   s = HeadsupTableServer.get_state(table_id)
-    #   assert s.p0.username == "anna"
-    #   assert s.p1 == nil
-    #   assert s.table_status == :WAITING
-    # end
+    test "flop之后首先bob行动check", %{table_id: table_id} do
+      MockPlayerRequestSender
+      # bob下注之后, 广播下注最新信息给所有玩家
+      |> expect(:notify_bets_info, 1, fn ["anna", "bob"], bets_info ->
+        assert bets_info == %{
+                 :pot => 20,
+                 "anna" => %{chips_left: 490, current_street_bet: 0},
+                 "bob" => %{chips_left: 490, current_street_bet: 0}
+               }
+
+        :ok
+      end)
+      # 通知下一个该anna行动
+      |> expect(:notify_player_todo_actions, 1, fn ["anna", "bob"],
+                                                   "anna",
+                                                   [:fold, :check, :raise] ->
+        :ok
+      end)
+
+      HeadsupTableServer.player_action_done(table_id, "bob", :check)
+      :pong = HeadsupTableServer.ping(table_id)
+    end
+
+    test "flop后位玩家anna也check之后发牌", %{table_id: table_id} do
+      MockPlayerRequestSender
+      # bob下注之后, 广播下注最新信息给所有玩家
+      |> expect(:notify_bets_info, 1, fn ["anna", "bob"], bets_info ->
+        assert bets_info == %{
+                 :pot => 20,
+                 "anna" => %{chips_left: 490, current_street_bet: 0},
+                 "bob" => %{chips_left: 490, current_street_bet: 0}
+               }
+
+        :ok
+      end)
+      # 之后发牌
+      |> expect(:deal_community_cards, 1, fn ["anna", "bob"], :turn, [%Card{}] ->
+        :ok
+      end)
+      # 下注信息再次广播出去
+      |> expect(:notify_bets_info, 1, fn ["anna", "bob"], bets_info ->
+        assert bets_info == %{
+                 :pot => 20,
+                 "anna" => %{chips_left: 490, current_street_bet: 0},
+                 "bob" => %{chips_left: 490, current_street_bet: 0}
+               }
+
+        :ok
+      end)
+      # 之后轮到bob行动
+      |> expect(:notify_player_todo_actions, 1, fn ["anna", "bob"],
+                                                   "bob",
+                                                   [:fold, :check, :raise] ->
+        :ok
+      end)
+
+      HeadsupTableServer.player_action_done(table_id, "anna", :check)
+      :pong = HeadsupTableServer.ping(table_id)
+    end
+
+    test "turn轮bob先行动check", %{table_id: table_id} do
+      MockPlayerRequestSender
+      # bob下注之后, 广播下注最新信息给所有玩家
+      |> expect(:notify_bets_info, 1, fn ["anna", "bob"], bets_info ->
+        assert bets_info == %{
+                 :pot => 20,
+                 "anna" => %{chips_left: 490, current_street_bet: 0},
+                 "bob" => %{chips_left: 490, current_street_bet: 0}
+               }
+
+        :ok
+      end)
+      # 之后轮到anna行动
+      |> expect(:notify_player_todo_actions, 1, fn ["anna", "bob"],
+                                                   "anna",
+                                                   [:fold, :check, :raise] ->
+        :ok
+      end)
+
+      HeadsupTableServer.player_action_done(table_id, "bob", :check)
+      :pong = HeadsupTableServer.ping(table_id)
+    end
+
+    test "turn轮anna加注raise", %{table_id: table_id} do
+      MockPlayerRequestSender
+      # anna加注之后, 广播下注最新信息给所有玩家
+      |> expect(:notify_bets_info, 1, fn ["anna", "bob"], bets_info ->
+        assert bets_info == %{
+                 :pot => 20,
+                 "anna" => %{chips_left: 390, current_street_bet: 100},
+                 "bob" => %{chips_left: 490, current_street_bet: 0}
+               }
+
+        :ok
+      end)
+      # 之后轮到bob行动
+      |> expect(:notify_player_todo_actions, 1, fn ["anna", "bob"],
+                                                   "bob",
+                                                   [:fold, {:call, 100}, :raise] ->
+        :ok
+      end)
+
+      HeadsupTableServer.player_action_done(table_id, "anna", {:raise, 100})
+      :pong = HeadsupTableServer.ping(table_id)
+    end
+
+    test "turn轮bob面对加注call", %{table_id: table_id} do
+      MockPlayerRequestSender
+      # bob跟注之后, 广播下注最新信息给所有玩家
+      |> expect(:notify_bets_info, 1, fn ["anna", "bob"], bets_info ->
+        assert bets_info == %{
+                 # FIXME: 这里pot应该是20此时的双方100应该还没进pot才对
+                 :pot => 220,
+                 "anna" => %{chips_left: 390, current_street_bet: 100},
+                 "bob" => %{chips_left: 390, current_street_bet: 100}
+               }
+
+        :ok
+      end)
+      # 之后发牌
+      |> expect(:deal_community_cards, 1, fn ["anna", "bob"], :river, [%Card{}] ->
+        :ok
+      end)
+      # 下注信息再次广播出去
+      |> expect(:notify_bets_info, 1, fn ["anna", "bob"], bets_info ->
+        assert bets_info == %{
+                 :pot => 220,
+                 "anna" => %{chips_left: 390, current_street_bet: 0},
+                 "bob" => %{chips_left: 390, current_street_bet: 0}
+               }
+
+        :ok
+      end)
+      # 之后轮到bob行动
+      |> expect(:notify_player_todo_actions, 1, fn ["anna", "bob"],
+                                                   "bob",
+                                                   [:fold, :check, :raise] ->
+        :ok
+      end)
+
+      HeadsupTableServer.player_action_done(table_id, "bob", :call)
+      :pong = HeadsupTableServer.ping(table_id)
+    end
+
+    test "river轮bob先行动check", %{table_id: table_id} do
+      MockPlayerRequestSender
+      # bob下注之后, 广播下注最新信息给所有玩家
+      |> expect(:notify_bets_info, 1, fn ["anna", "bob"], bets_info ->
+        assert bets_info == %{
+                 :pot => 220,
+                 "anna" => %{chips_left: 390, current_street_bet: 0},
+                 "bob" => %{chips_left: 390, current_street_bet: 0}
+               }
+
+        :ok
+      end)
+      # 之后轮到anna行动
+      |> expect(:notify_player_todo_actions, 1, fn ["anna", "bob"],
+                                                   "anna",
+                                                   [:fold, :check, :raise] ->
+        :ok
+      end)
+
+      HeadsupTableServer.player_action_done(table_id, "bob", :check)
+      :pong = HeadsupTableServer.ping(table_id)
+    end
+
+    test "river轮anna简单check判定牌局过程", %{table_id: table_id} do
+      MockPlayerRequestSender
+      # anna下注之后, 广播下注最新信息给所有玩家
+      |> expect(:notify_bets_info, 1, fn ["anna", "bob"], bets_info ->
+        assert bets_info == %{
+                 :pot => 220,
+                 "anna" => %{chips_left: 390, current_street_bet: 0},
+                 "bob" => %{chips_left: 390, current_street_bet: 0}
+               }
+
+        :ok
+      end)
+      # 牌局通知结果
+      |> expect(:notify_winner_result, 1, fn ["anna", "bob"],
+                                             winner,
+                                             chips,
+                                             {_type,
+                                              %{
+                                                "anna" => _anna_hole_cards,
+                                                "bob" => _bob_hole_cards
+                                              }, _win5, _lose5} ->
+        case winner do
+          "anna" ->
+            assert chips["anna"] == 610
+            assert chips["bob"] == 390
+
+          "bob" ->
+            assert chips["anna"] == 390
+            assert chips["bob"] == 610
+
+          nil ->
+            assert chips["anna"] == 500
+            assert chips["bob"] == 500
+        end
+
+        :ok
+      end)
+
+      HeadsupTableServer.player_action_done(table_id, "anna", :check)
+      :pong = HeadsupTableServer.ping(table_id)
+    end
+  end
+
+  describe "一方玩家fold的情景测试" do
+    test "anna fold情景测试" do
+      table_id = unique_table_id()
+
+      TableSupervisor.start_table(%{@table_config | id: table_id})
+      |> IO.inspect(label: "启动桌子 #{table_id} 结果")
+
+      :pong = HeadsupTableServer.ping(table_id)
+
+      MockPlayerRequestSender
+      # 其它的通知前边test case已经覆盖到了, 这里就简单stub能工作就好
+      |> stub(:notify_players_info, fn _, _ -> :ok end)
+      |> stub(:notify_bets_info, fn _, _ -> :ok end)
+      |> stub(:deal_hole_cards, fn _, _ -> :ok end)
+      |> stub(:notify_player_todo_actions, fn _, _, _ -> :ok end)
+      # 这里重点是测试在一个玩家fold的情况下, 最终结果只更新筹码信息不显示双方手牌
+      |> expect(:notify_winner_result, fn _, "bob", %{"anna" => 495, "bob" => 505}, nil -> :ok end)
+
+      HeadsupTableServer.join_table(table_id, "anna")
+      HeadsupTableServer.join_table(table_id, "bob")
+      HeadsupTableServer.start_game(table_id, "anna")
+      HeadsupTableServer.start_game(table_id, "bob")
+      # 玩家anna直接fold牌局结束
+      HeadsupTableServer.player_action_done(table_id, "anna", :fold)
+      :pong = HeadsupTableServer.ping(table_id)
+    end
   end
 
   # describe "单挑牌桌测试" do
