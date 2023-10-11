@@ -112,3 +112,6 @@ Player.player_action("bob", {:raise, 40})
 Player.player_action("anna", :call)
 # TODO ->> show hands
 TODO ACTION: {:table, {:show_hands, {350, %{0 => 325, 1 => 325}}}}
+
+* BOT
+PlayerBotServer.start_bot("bot001", 1001)
