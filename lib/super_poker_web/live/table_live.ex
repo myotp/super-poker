@@ -3,6 +3,7 @@ defmodule SuperPokerWeb.TableLive do
 
   alias SuperPoker.Core.Card
   alias SuperPoker.Player
+  alias SuperPoker.Bot.PlayerBotServer
 
   def mount(params, session, socket) do
     IO.inspect(self(), label: "MOUNT <PID>")
@@ -20,6 +21,7 @@ defmodule SuperPokerWeb.TableLive do
 
     socket =
       socket
+      |> assign(table_id: table_id)
       |> assign(username: username)
       |> assign(pot: 0)
       |> assign(in_gaming: false)
@@ -99,12 +101,15 @@ defmodule SuperPokerWeb.TableLive do
       </tbody>
     </table>
 
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-3 gap-4">
       <div :if={not @in_gaming and @oppo_username != ""} class="start-game-button">
         <button phx-click="start-game">Start Game</button>
       </div>
       <div :if={not @in_gaming} class="start-game-button">
         <button phx-click="leave-table">Leave Table</button>
+      </div>
+      <div :if={not @in_gaming} class="start-game-button">
+        <button phx-click="start-bot">Start Bot</button>
       </div>
     </div>
 
@@ -167,6 +172,11 @@ defmodule SuperPokerWeb.TableLive do
       |> assign(:oppo_hole_cards, [])
       |> assign(:pot, 0)
 
+    {:noreply, socket}
+  end
+
+  def handle_event("start-bot", _, socket) do
+    PlayerBotServer.start_bot(socket.assigns.table_id)
     {:noreply, socket}
   end
 
