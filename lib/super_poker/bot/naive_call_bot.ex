@@ -5,7 +5,7 @@ defmodule SuperPoker.Bot.NaiveCallBot do
   def make_decision(table) do
     case table.amount_to_call do
       0 -> :check
-      _ -> {:call, table.amount_to_call}
+      _ -> :call
     end
   end
 end

@@ -114,4 +114,12 @@ Player.player_action("anna", :call)
 TODO ACTION: {:table, {:show_hands, {350, %{0 => 325, 1 => 325}}}}
 
 * BOT
-PlayerBotServer.start_bot("bot001", 1001)
+PlayerBotServer.start_bot(1001)
+
+Player.start_player("anna")
+:ok = Player.join_table("anna", 1001, 500)
+Player.start_game("anna")
+Player.player_action("anna", :check)
+Player.player_action("anna", :check)
+Player.player_action("anna", :check)
+Player.player_action("anna", :check)
