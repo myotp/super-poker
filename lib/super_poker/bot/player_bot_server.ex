@@ -3,7 +3,7 @@ defmodule SuperPoker.Bot.PlayerBotServer do
   require Logger
 
   alias SuperPoker.Table
-  alias SuperPoker.Bot.NaiveHeadsupTable
+
   alias SuperPoker.Bot.NaiveCallBot
 
   @moduledoc """
@@ -19,72 +19,88 @@ defmodule SuperPoker.Bot.PlayerBotServer do
 
   username层级
   这个进程维持住自己的username, 这样
+
+  bot
+  有了基础bot实现之后, 提取出来尽量多的内容到纯函数式的bot当中
+  这样, 后续就可以可替换的实现不同类型的bot, 并且易于测试
   """
   defmodule State do
     defstruct [
       :username,
       :table_id,
-      :bot_table
+      :bot_mod,
+      :bot
     ]
   end
 
   def start_bot(table_id) do
-    username = random_username()
+    bot_mod = choose_bot_strategy()
+    do_start_bot(table_id, bot_mod)
+  end
+
+  defp choose_bot_strategy() do
+    Enum.random([NaiveCallBot])
+  end
+
+  def do_start_bot(table_id, bot_mod) do
+    username = bot_mod.random_username()
     # 都挂在同样的PlayerSupervisor旗下, 但是是不同的模块实现
     DynamicSupervisor.start_child(
       SuperPoker.Player.PlayerSupervisor,
-      {__MODULE__, [username, table_id]}
+      {__MODULE__, [username, table_id, bot_mod]}
     )
   end
 
-  defp random_username() do
-    num = System.unique_integer() |> abs()
-    "Bot#{num}"
-  end
-
   # ================ GenServer回调部分 =======================
-  def start_link([username, table_id]) do
+  def start_link([username, table_id, bot_mod]) do
     IO.puts("启动bot #{username} 加入桌子#{table_id}")
-    GenServer.start_link(__MODULE__, [username, table_id], name: via_tuple(username))
+    GenServer.start_link(__MODULE__, [username, table_id, bot_mod], name: via_tuple(username))
   end
 
+  # FIXME: 这里, 作为多态GenServer关键, 此函数移入上层
   defp via_tuple(username) do
     {:via, Registry, {SuperPoker.Player.PlayerRegistry, username}}
   end
 
   @impl GenServer
-  def init([username, table_id]) do
+  def init([username, table_id, bot_mod]) do
     log("对于bot#{username}启动独立player进程")
 
-    {:ok, %State{username: username, table_id: table_id, bot_table: nil},
-     {:continue, :will_join_table}}
+    state = %State{
+      username: username,
+      table_id: table_id,
+      bot_mod: bot_mod,
+      bot: nil
+    }
+
+    {:ok, state, {:continue, :will_join_table}}
   end
 
   @impl GenServer
   def handle_call(
         {:deal_hole_cards, hole_cards},
         _from,
-        %State{username: username, bot_table: bot_table} = state
+        %State{username: username, bot_mod: bot_mod, bot: bot} = state
       ) do
     log("bot#{username}收到手牌 #{inspect(hole_cards)}")
-    bot_table = NaiveHeadsupTable.deal_hole_cards(bot_table, hole_cards)
-    {:reply, :ok, %State{state | bot_table: bot_table}}
+    bot = bot_mod.deal_hole_cards(bot, hole_cards)
+    {:reply, :ok, %State{state | bot: bot}}
   end
 
   # 轮到bot玩家行动
   def handle_call(
-        {:todo_actions, username, actions},
+        {:todo_actions, username, _actions} = todo_actions,
         _from,
         %State{
           username: username,
-          bot_table: bot_table
+          bot_mod: bot_mod,
+          bot: bot
         } = state
       ) do
-    log("轮到自己 #{username} 行动 #{inspect(actions)}")
-    amount_to_call = actions[:call] || 0
-    bot_table = NaiveHeadsupTable.update_amount_to_call(bot_table, amount_to_call)
+    log("处理行动 #{inspect(todo_actions)}")
+    bot = bot_mod.update_todo_actions(bot, todo_actions)
     send(self(), :make_bot_decision)
-    {:reply, :ok, %State{state | bot_table: bot_table}}
+    {:reply, :ok, %State{state | bot: bot}}
   end
 
   # 对手玩家行动
@@ -99,13 +115,13 @@ defmodule SuperPoker.Bot.PlayerBotServer do
 
   # 发公共牌
   def handle_call(
-        {:deal_community_cards, street, cards},
+        {:deal_community_cards, street, community_cards},
         _from,
-        %State{bot_table: bot_table} = state
+        %State{bot: bot, bot_mod: bot_mod} = state
       ) do
-    log("bot收到新的公共牌 #{street} #{inspect(cards)}")
-    bot_table = NaiveHeadsupTable.deal_community_cards(bot_table, cards)
-    {:reply, :ok, %State{state | bot_table: bot_table}}
+    log("bot收到新的公共牌 #{street} #{inspect(community_cards)}")
+    bot = bot_mod.deal_community_cards(bot, street, community_cards)
+    {:reply, :ok, %State{state | bot: bot}}
   end
 
   # 牌局结束
@@ -115,7 +131,7 @@ defmodule SuperPoker.Bot.PlayerBotServer do
   end
 
   def handle_call(request, _from, state) do
-    IO.inspect(request, label: "[BOT] todo handle_call/3")
+    warning_log("[UNKNOWN] handle_call #{inspect(request)}")
     {:reply, :ok, state}
   end
 
@@ -129,25 +145,28 @@ defmodule SuperPoker.Bot.PlayerBotServer do
   def handle_continue(:will_start_game, %State{username: username, table_id: table_id} = state) do
     log("bot#{username} 开始游戏 #{table_id}")
     Table.start_game(table_id, username)
-    {:noreply, %State{state | bot_table: nil}}
+    {:noreply, %State{state | bot: nil}}
   end
 
   @impl GenServer
   # 第一次收bets信息是盲注阶段, 此时初始化bot table
-  def handle_cast({:bets_info, bets_info}, %State{username: username, bot_table: nil} = state) do
+  def handle_cast(
+        {:bets_info, bets_info},
+        %State{username: username, bot_mod: bot_mod, bot: nil} = state
+      ) do
     log("bot#{username}收到盲注下注信息 #{inspect(bets_info)}")
-    bot_table = create_bot_table(username, bets_info)
-    {:noreply, %State{state | bot_table: bot_table}}
+    bot = bot_mod.new(username, bets_info)
+    {:noreply, %State{state | bot: bot}}
   end
 
   # 再收到bets信息就是后续持续双方下注了
   def handle_cast(
         {:bets_info, bets_info},
-        %State{username: username, bot_table: bot_table} = state
+        %State{username: username, bot: bot, bot_mod: bot_mod} = state
       ) do
     log("bot#{username}收到双方下注信息 #{inspect(bets_info)}")
-    bot_table = update_bets(bot_table, username, bets_info)
-    {:noreply, %State{state | bot_table: bot_table}}
+    bot = bot_mod.update_bets(bot, bets_info)
+    {:noreply, %State{state | bot: bot}}
   end
 
   def handle_cast({:notify_players_info, players_info}, state) do
@@ -155,14 +174,14 @@ defmodule SuperPoker.Bot.PlayerBotServer do
     {:noreply, state}
   end
 
-  def handle_cast(msg, %State{username: username} = state) do
-    log("TODO bot#{username}收到消息 #{inspect(msg)}")
+  def handle_cast(msg, %State{} = state) do
+    warning_log("[UNKNOWN] handle_cast #{inspect(msg)}")
     {:noreply, state}
   end
 
   @impl GenServer
-  def handle_info(:make_bot_decision, %State{bot_table: bot_table} = state) do
-    action = NaiveCallBot.make_decision(bot_table)
+  def handle_info(:make_bot_decision, %State{bot: bot, bot_mod: bot_mod} = state) do
+    action = bot_mod.make_decision(bot)
     log("BOT ACTION: #{inspect(action)}")
     Table.player_action_done(state.table_id, state.username, action)
     {:noreply, state}
@@ -172,16 +191,7 @@ defmodule SuperPoker.Bot.PlayerBotServer do
     Logger.info("#{inspect(self())} " <> msg, ansi_color: :light_yellow)
   end
 
-  # helper functions
-  # {:bets_info,
-  #    %{:pot => 0,
-  #      "anna" => %{chips_left: 490, current_street_bet: 10},
-  #      "bot576460752303421177" => %{chips_left: 495, current_street_bet: 5}}}
-  defp create_bot_table(_username, _blind_bets_info) do
-    NaiveHeadsupTable.new(888, 999)
-  end
-
-  defp update_bets(table, _username, _bets_info) do
-    table
+  defp warning_log(msg) do
+    Logger.warning("#{inspect(self())} " <> msg, ansi_color: :light_red)
   end
 end

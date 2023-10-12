@@ -12,7 +12,7 @@ defmodule SuperPoker.Bot.NaiveCallBotTest do
         |> NaiveHeadsupTable.make_bet(:oppo, 1)
         |> NaiveHeadsupTable.update_amount_to_call(0.5)
 
-      assert NaiveCallBot.make_decision(table) == :call
+      assert NaiveCallBot.make_decision(%NaiveCallBot{table: table}) == :call
     end
 
     test "无需下注的时候check" do
@@ -20,7 +20,7 @@ defmodule SuperPoker.Bot.NaiveCallBotTest do
         NaiveHeadsupTable.new(100, 200)
         |> NaiveHeadsupTable.update_amount_to_call(0)
 
-      assert NaiveCallBot.make_decision(table) == :check
+      assert NaiveCallBot.make_decision(%NaiveCallBot{table: table}) == :check
     end
   end
 end
