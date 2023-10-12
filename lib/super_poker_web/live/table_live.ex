@@ -3,6 +3,7 @@ defmodule SuperPokerWeb.TableLive do
 
   alias SuperPoker.Core.Card
   alias SuperPoker.Player
+  alias SuperPoker.Bot.PlayerBotServer
 
   def mount(params, session, socket) do
     IO.inspect(self(), label: "MOUNT <PID>")
@@ -20,6 +21,7 @@ defmodule SuperPokerWeb.TableLive do
 
     socket =
       socket
+      |> assign(table_id: table_id)
       |> assign(username: username)
       |> assign(pot: 0)
       |> assign(in_gaming: false)
@@ -34,6 +36,7 @@ defmodule SuperPokerWeb.TableLive do
       |> assign(my_status: :JOINED)
       |> assign(oppo_status: :EMPTY)
       |> assign(my_turn: false)
+      |> assign(disable_check_button: false)
       |> assign(
         community_cards: [
           # %Card{rank: 3, suit: :hearts},
@@ -99,17 +102,20 @@ defmodule SuperPokerWeb.TableLive do
       </tbody>
     </table>
 
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-3 gap-4">
       <div :if={not @in_gaming and @oppo_username != ""} class="start-game-button">
         <button phx-click="start-game">Start Game</button>
       </div>
       <div :if={not @in_gaming} class="start-game-button">
         <button phx-click="leave-table">Leave Table</button>
       </div>
+      <div :if={not @in_gaming} class="start-game-button">
+        <button phx-click="start-bot">Start Bot</button>
+      </div>
     </div>
 
     <div :if={@in_gaming and @my_turn} class="grid grid-cols-4 gap-4">
-      <div class="game-action-button">
+      <div :if={not @disable_check_button} class="game-action-button">
         <button phx-click="game-action-check">check</button>
       </div>
       <div class="game-action-button">
@@ -167,6 +173,11 @@ defmodule SuperPokerWeb.TableLive do
       |> assign(:oppo_hole_cards, [])
       |> assign(:pot, 0)
 
+    {:noreply, socket}
+  end
+
+  def handle_event("start-bot", _, socket) do
+    PlayerBotServer.start_bot(socket.assigns.table_id)
     {:noreply, socket}
   end
 
@@ -264,8 +275,9 @@ defmodule SuperPokerWeb.TableLive do
     {:noreply, socket}
   end
 
-  def handle_info({:bet_actions, _}, socket) do
-    socket = assign(socket, :my_turn, true)
+  def handle_info({:bet_actions, actions}, socket) do
+    disable_check? = :check not in actions
+    socket = assign(socket, my_turn: true, disable_check_button: disable_check?)
     {:noreply, socket}
   end
 

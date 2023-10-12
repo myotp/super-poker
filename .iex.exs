@@ -15,6 +15,9 @@ alias SuperPoker.GameServer.HeadsupTableServer
 alias SuperPoker.Player.PlayerServer
 alias SuperPoker.Player
 
+# Bot相关
+alias SuperPoker.Bot.PlayerBotServer
+
 #
 dev_table_config = %{
   id: 1055,
