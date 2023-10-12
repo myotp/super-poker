@@ -36,6 +36,7 @@ defmodule SuperPokerWeb.TableLive do
       |> assign(my_status: :JOINED)
       |> assign(oppo_status: :EMPTY)
       |> assign(my_turn: false)
+      |> assign(disable_check_button: false)
       |> assign(
         community_cards: [
           # %Card{rank: 3, suit: :hearts},
@@ -114,7 +115,7 @@ defmodule SuperPokerWeb.TableLive do
     </div>
 
     <div :if={@in_gaming and @my_turn} class="grid grid-cols-4 gap-4">
-      <div class="game-action-button">
+      <div :if={not @disable_check_button} class="game-action-button">
         <button phx-click="game-action-check">check</button>
       </div>
       <div class="game-action-button">
@@ -274,8 +275,9 @@ defmodule SuperPokerWeb.TableLive do
     {:noreply, socket}
   end
 
-  def handle_info({:bet_actions, _}, socket) do
-    socket = assign(socket, :my_turn, true)
+  def handle_info({:bet_actions, actions}, socket) do
+    disable_check? = :check not in actions
+    socket = assign(socket, my_turn: true, disable_check_button: disable_check?)
     {:noreply, socket}
   end
 
