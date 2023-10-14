@@ -13,10 +13,23 @@ ls -lh IRCdata
 mkdir sample
 cp IRCdata/holdem3.200110.tgz sample
 
-* Extract Data
+* Extract Clean and Browse Data
+# py3 venv
 python3 -m venv ~/.py3venv
 source ~/.py3venv/bin/activate
 pip install --upgrade pip
 pip install colorama
+
+# extract
 python3 ~/dev/super-poker/lib/super_poker/irc_dataset/docs/extract.py
 cat ~/dev/poker-irc-dataset/sample/hands.json | jq "."
+
+# clean
+cd ~/dev/poker-irc-dataset/sample
+cp ~/dev/super-poker/lib/super_poker/irc_dataset/docs/clean.py .
+python3 clean.py
+
+# browse
+cd ~/dev/poker-irc-dataset/sample
+cp ~/dev/super-poker/lib/super_poker/irc_dataset/docs/browse.py .
+python3 browse.py
