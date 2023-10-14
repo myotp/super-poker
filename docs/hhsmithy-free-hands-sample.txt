@@ -1,0 +1,76 @@
+PokerStars Hand #246256820433:  Hold'em No Limit ($2.50/$5.00 USD) - 2023/10/10 4:12:48 ET
+Table 'Rigel' 6-max Seat #1 is the button
+Seat 1: Revis11 ($1094.11 in chips)
+Seat 4: iLLiNThEHeaD ($579.14 in chips)
+Revis11: posts small blind $2.50
+Mattyj367: is sitting out
+iLLiNThEHeaD: posts big blind $5
+*** HOLE CARDS ***
+Revis11: folds
+Uncalled bet ($2.50) returned to iLLiNThEHeaD
+Mattyj367 leaves the table
+iLLiNThEHeaD collected $5 from pot
+iLLiNThEHeaD: doesn't show hand
+*** SUMMARY ***
+Total pot $5 | Rake $0
+Seat 1: Revis11 (button) (small blind) folded before Flop
+Seat 4: iLLiNThEHeaD (big blind) collected ($5)
+
+
+PokerStars Hand #246256820437:  Hold'em No Limit ($2.50/$5.00 USD) - 2023/10/10 4:12:53 ET
+Table 'Rigel' 6-max Seat #4 is the button
+Seat 1: Revis11 ($1091.61 in chips)
+Seat 4: iLLiNThEHeaD ($581.64 in chips)
+iLLiNThEHeaD: posts small blind $2.50
+Revis11: posts big blind $5
+*** HOLE CARDS ***
+iLLiNThEHeaD: raises $7.50 to $12.50
+Revis11: calls $7.50
+*** FLOP *** [2s 7c Th]
+Revis11: checks
+iLLiNThEHeaD: checks
+*** TURN *** [2s 7c Th] [9h]
+Revis11: bets $11.28
+iLLiNThEHeaD: calls $11.28
+*** RIVER *** [2s 7c Th 9h] [9s]
+Revis11: bets $21.88
+iLLiNThEHeaD: folds
+Uncalled bet ($21.88) returned to Revis11
+Revis11 collected $46.56 from pot
+*** SUMMARY ***
+Total pot $47.56 | Rake $1
+Board [2s 7c Th 9h 9s]
+Seat 1: Revis11 (big blind) collected ($46.56)
+Seat 4: iLLiNThEHeaD (button) (small blind) folded on the River
+
+
+PokerStars Hand #246256820465:  Hold'em No Limit ($2.50/$5.00 USD) - 2023/10/10 4:13:22 ET
+Table 'Rigel' 6-max Seat #1 is the button
+Seat 1: Revis11 ($1114.39 in chips)
+Seat 4: iLLiNThEHeaD ($557.86 in chips)
+Revis11: posts small blind $2.50
+iLLiNThEHeaD: posts big blind $5
+*** HOLE CARDS ***
+Revis11: raises $5 to $10
+iLLiNThEHeaD: calls $5
+*** FLOP *** [8d 9c Tc]
+iLLiNThEHeaD: checks
+Revis11: bets $8.93
+iLLiNThEHeaD: calls $8.93
+*** TURN *** [8d 9c Tc] [Kc]
+iLLiNThEHeaD: checks
+Revis11: checks
+*** RIVER *** [8d 9c Tc Kc] [2d]
+iLLiNThEHeaD: checks
+Revis11: checks
+*** SHOW DOWN ***
+iLLiNThEHeaD: shows [9d 7h] (a pair of Nines)
+Revis11: mucks hand
+iLLiNThEHeaD collected $36.86 from pot
+*** SUMMARY ***
+Total pot $37.86 | Rake $1
+Board [8d 9c Tc Kc 2d]
+Seat 1: Revis11 (button) (small blind) mucked
+Seat 4: iLLiNThEHeaD (big blind) showed [9d 7h] and won ($36.86) with a pair of Nines
+
+
