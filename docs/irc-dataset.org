@@ -1,0 +1,14 @@
+* Michael Maurer's IRC Poker Database
+http://poker.cs.ualberta.ca/irc_poker_database.html
+https://github.com/allenfrostline/PokerHandsDataset/tree/master
+
+* Prepare Data
+mkdir ~/dev/poker-irc-dataset
+cd ~/dev/poker-irc-dataset
+wget http://poker.cs.ualberta.ca/IRC/IRCdata.tgz
+cd ~/dev/poker-irc-dataset
+ls -lh IRCdata.tgz
+tar -xvf IRCdata.tgz
+ls -lh IRCdata
+mkdir sample
+cp IRCdata/holdem3.200110.tgz sample
