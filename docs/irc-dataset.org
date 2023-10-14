@@ -12,3 +12,11 @@ tar -xvf IRCdata.tgz
 ls -lh IRCdata
 mkdir sample
 cp IRCdata/holdem3.200110.tgz sample
+
+* Extract Data
+python3 -m venv ~/.py3venv
+source ~/.py3venv/bin/activate
+pip install --upgrade pip
+pip install colorama
+python3 ~/dev/super-poker/lib/super_poker/irc_dataset/docs/extract.py
+cat ~/dev/poker-irc-dataset/sample/hands.json | jq "."
