@@ -115,7 +115,7 @@ import json
 
 print(Fore.YELLOW + "RUN RUN RUN")
 # ENVIRONMENT VARIABLES -- CHANGE THESE TO FIT YOUR ENVIRONMENT
-tgz_extract_directory = "/Users/jiaw/dev/poker-irc-dataset/sample/"
+tgz_extract_directory = "/Users/jiaw/dev/poker-irc-dataset/readme/"
 OUTFILE = tgz_extract_directory + "hands.json"
 LOCAL_OS = "mac"  # valid values are "mac" or "pc"
 # END ENVIRONMENT VARIABLES
@@ -386,6 +386,16 @@ def loop_file_groups(file_groups):
 
 
 def loop_tgz(extract_dir):
+    if extract_dir.find('readme') != -1:
+        print(Fore.BLUE + "专门针对我自己的readme小数据操作")
+        # 自己创建精简版readme目录, 省去tgz步骤
+        file_groups = []
+        game_type = 'holdem'
+        file_yearmonth = '199601'
+        file_groups.append(tgz_extract_directory + game_type +
+                                            SLASH + file_yearmonth + SLASH)
+        return file_groups
+
     try:
         file_groups = []
         for root, dirs, files in os.walk(tgz_extract_directory, topdown=False):

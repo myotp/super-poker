@@ -33,3 +33,78 @@ python3 clean.py
 cd ~/dev/poker-irc-dataset/sample
 cp ~/dev/super-poker/lib/super_poker/irc_dataset/docs/browse.py .
 python3 browse.py
+
+* 探索
+cd ~/dev/poker-irc-dataset/sample/holdem3/200110
+# 先挑选个玩家个人的
+ls -l pdb
+# 选出文件内容大小较小的pdb.rivrgod作为例子分析
+ls -l pdb/pdb.rivrgod
+
+# 看起来1跟5才有最终对手手牌，其它都fold了？
+cat pdb/pdb.rivrgod
+rivrgod   1004390980  2  2 Br  k     k     rrrrrrrrrrrrrrrrrrrrrrrrrA   5110 5110 10220 Qd 8c
+rivrgod   1004391044  2  1 Bc  k     k     brrrrrrrrr  10220 1950 3800
+rivrgod   1004391076  2  2 Bk  k     k     rrrrrrrrrrrr  12070 2450 4800
+rivrgod   1004391107  2  1 Brc b     brrr  -        14420  900 1700
+rivrgod   1004391128  2  2 Bk  k     k     rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr  15220 10650 21300 Jc Kd
+
+# 再根据玩家名字找对局
+grep rivrgod hroster
+1004390980  2 Voyeur rivrgod
+1004391044  2 Voyeur rivrgod
+1004391076  2 Voyeur rivrgod
+1004391107  2 Voyeur rivrgod
+1004391128  2 Voyeur rivrgod
+
+# 根据此二人对战构建一组小数据
+cd ~/dev/poker-irc-dataset
+mkdir -p xyz/holdem3/200110/pdb
+# hroster只保留rivrgod对战
+grep rivrgod sample/holdem3/200110/hroster | tee xyz/holdem3/200110/hroster
+# pdb只保留两位玩家数据
+cp sample/holdem3/200110/pdb/pdb.rivrgod xyz/holdem3/200110/pdb
+cp sample/holdem3/200110/pdb/pdb.Voyeur xyz/holdem3/200110/pdb
+# hdb也是仅保留二者对局
+touch xyz/holdem3/200110/hdb
+grep 1004390980 sample/holdem3/200110/hdb >> xyz/holdem3/200110/hdb
+grep 1004391044 sample/holdem3/200110/hdb >> xyz/holdem3/200110/hdb
+grep 1004391076 sample/holdem3/200110/hdb >> xyz/holdem3/200110/hdb
+grep 1004391107 sample/holdem3/200110/hdb >> xyz/holdem3/200110/hdb
+grep 1004391128 sample/holdem3/200110/hdb >> xyz/holdem3/200110/hdb
+cat xyz/holdem3/200110/hdb
+
+# extract
+python3 ~/dev/super-poker/lib/super_poker/irc_dataset/docs/extract.py
+# clean
+cd ~/dev/poker-irc-dataset/xyz
+cp ~/dev/super-poker/lib/super_poker/irc_dataset/docs/clean.py .
+python3 clean.py
+# browse
+cp ~/dev/super-poker/lib/super_poker/irc_dataset/docs/browse.py .
+python3 browse.py
+
+* 简化版README例子readme
+# 根据此二人对战构建一组小数据
+cd ~/dev/poker-irc-dataset
+mkdir tmp
+cp IRCdata/holdem.199601.tgz tmp
+cd tmp
+tar -xvf holdem.199601.tgz
+cd ~/dev/poker-irc-dataset
+mkdir -p readme/holdem/199601/pdb
+# hroster提取 820830094
+grep 820830094 tmp/holdem/199601/hroster | tee readme/holdem/199601/hroster
+# pdb只保留两位玩家数据
+grep 820830094 tmp/holdem/199601/pdb/pdb.Jak | tee readme/holdem/199601/pdb/pdb.Jak
+grep 820830094 tmp/holdem/199601/pdb/pdb.num | tee readme/holdem/199601/pdb/pdb.num
+# hdb也是仅保留二者对局
+grep 820830094 tmp/holdem/199601/hdb | tee readme/holdem/199601/hdb
+# extract
+python3 ~/dev/super-poker/lib/super_poker/irc_dataset/docs/extract.py
+cd ~/dev/poker-irc-dataset/readme
+cp ~/dev/super-poker/lib/super_poker/irc_dataset/docs/clean.py .
+python3 clean.py
+# browse
+cp ~/dev/super-poker/lib/super_poker/irc_dataset/docs/browse.py .
+python3 browse.py
