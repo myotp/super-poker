@@ -29,3 +29,6 @@ dev_table_config = %{
   rules: SuperPoker.RulesEngine.SimpleRules1v1,
   player: SuperPoker.PlayerNotify.PlayerRequestPrinter
 }
+
+# IRC dataset
+alias SuperPoker.IrcDataset.DumpIrcDataset
