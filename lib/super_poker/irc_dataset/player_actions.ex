@@ -22,45 +22,50 @@ defmodule SuperPoker.IrcDataset.PlayerActions do
   # num       820830094  2  2 Bk  b     b     k         1420   40    0 9h Kh
   # ZhaoYun   975790230  6  2 B   -     -     -         2671   20   30
   def parse(str) do
-    [
-      username,
-      game_id,
-      num_players,
-      pos,
-      preflop,
-      flop,
-      turn,
-      river,
-      bankroll,
-      total_bet,
-      winnings | cards
-    ] = String.split(str, " ", trim: true)
+    case String.split(str, " ", trim: true) do
+      [
+        username,
+        game_id,
+        num_players,
+        pos,
+        preflop,
+        flop,
+        turn,
+        river,
+        bankroll,
+        total_bet,
+        winnings | cards
+      ] ->
+        hole_cards =
+          case cards do
+            [_, _] ->
+              cards
+              |> Enum.join(" ")
+              |> String.upcase()
 
-    hole_cards =
-      case cards do
-        [_, _] ->
-          cards
-          |> Enum.join(" ")
-          |> String.upcase()
+            [] ->
+              nil
+          end
 
-        [] ->
-          nil
-      end
+        %PlayerActions{
+          username: username,
+          game_id: game_id |> String.to_integer(),
+          num_players: num_players |> String.to_integer(),
+          pos: pos |> String.to_integer(),
+          preflop: preflop,
+          flop: flop |> round_action_maybe_empty(),
+          turn: turn |> round_action_maybe_empty(),
+          river: river |> round_action_maybe_empty(),
+          bankroll: bankroll |> String.to_integer(),
+          total_bet: total_bet |> String.to_integer(),
+          winnings: winnings |> String.to_integer(),
+          hole_cards: hole_cards
+        }
 
-    %PlayerActions{
-      username: username,
-      game_id: game_id |> String.to_integer(),
-      num_players: num_players |> String.to_integer(),
-      pos: pos |> String.to_integer(),
-      preflop: preflop,
-      flop: flop |> round_action_maybe_empty(),
-      turn: turn |> round_action_maybe_empty(),
-      river: river |> round_action_maybe_empty(),
-      bankroll: bankroll |> String.to_integer(),
-      total_bet: total_bet |> String.to_integer(),
-      winnings: winnings |> String.to_integer(),
-      hole_cards: hole_cards
-    }
+      _ ->
+        IO.puts("HELP! #{str}")
+        nil
+    end
   end
 
   defp round_action_maybe_empty("-"), do: nil

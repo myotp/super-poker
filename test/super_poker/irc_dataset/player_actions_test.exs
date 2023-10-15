@@ -34,5 +34,10 @@ defmodule SuperPoker.IrcDataset.PlayerActionsTest do
                hole_cards: nil
              } = PlayerActions.parse(action_str)
     end
+
+    test "错误数据比如holdem3/199901/pdb/pdb.AcesUp返回nil" do
+      invalid_action_str = "1234234"
+      assert PlayerActions.parse(invalid_action_str) == nil
+    end
   end
 end

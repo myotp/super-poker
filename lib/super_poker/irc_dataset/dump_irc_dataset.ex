@@ -36,7 +36,11 @@ defmodule SuperPoker.IrcDataset.DumpIrcDataset do
       File.read!(filename)
     end)
     |> Stream.map(fn content -> String.split(content, "\n", trim: true) end)
-    |> Stream.map(fn lines -> Enum.map(lines, fn line -> PlayerActions.parse(line) end) end)
+    |> Stream.map(fn lines ->
+      lines
+      |> Enum.map(fn line -> PlayerActions.parse(line) end)
+      |> Enum.reject(&is_nil/1)
+    end)
     |> Stream.concat()
     |> Stream.each(fn player_actions ->
       case IrcPlayerActions.save_player_actions(player_actions) do

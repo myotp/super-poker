@@ -116,6 +116,8 @@ psql -d super_poker_dev
 \d irc_player_actions
 # 采样一些行显示一下
 SELECT * FROM irc_player_actions TABLESAMPLE SYSTEM(0.02);
+# 准确行数
+SELECT count(*) FROM irc_player_actions;
 # 大致估算多少行
 SELECT reltuples AS estimate FROM pg_class WHERE relname = 'irc_player_actions';
 # 查看某一个
