@@ -41,8 +41,8 @@ defmodule SuperPoker.IrcDataset.IrcPlayerActions do
     player_actions
     |> Map.from_struct()
     |> changeset()
-    # upsert
-    |> Repo.insert(conflict_target: [:username, :game_id], on_conflict: :replace_all)
+    # upsert如果冲突则简单忽略即可, 后续如果修改整体数据, 删除重新导入即可
+    |> Repo.insert(conflict_target: [:username, :game_id], on_conflict: :nothing)
   end
 
   def changeset(irc_player_actions \\ %__MODULE__{}, attrs) do

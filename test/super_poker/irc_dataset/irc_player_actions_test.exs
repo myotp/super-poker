@@ -40,7 +40,7 @@ defmodule SuperPoker.IrcDataset.IrcPlayerActionsTest do
              ] = Repo.all(IrcPlayerActions)
     end
 
-    test "重复的username+game_id报错" do
+    test "重复的username+game_id简单忽略便于导入数据可以反复执行" do
       player_actions = %PlayerActions{
         username: "Anna",
         game_id: 9001,
@@ -58,9 +58,12 @@ defmodule SuperPoker.IrcDataset.IrcPlayerActionsTest do
       assert {:ok, %IrcPlayerActions{pos: 1}} =
                IrcPlayerActions.save_player_actions(player_actions)
 
-      # 第二次覆盖
-      assert {:ok, %IrcPlayerActions{pos: 2}} =
-               IrcPlayerActions.save_player_actions(%{player_actions | pos: 2})
+      # 第二次简单忽略
+      assert {:ok, %IrcPlayerActions{pos: 222}} =
+               IrcPlayerActions.save_player_actions(%{player_actions | pos: 222})
+
+      # 实际数据库中仍为原来的值
+      assert [%IrcPlayerActions{pos: 1}] = Repo.all(IrcPlayerActions)
     end
   end
 end
