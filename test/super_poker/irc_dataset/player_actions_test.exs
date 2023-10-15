@@ -3,6 +3,8 @@ defmodule SuperPoker.IrcDataset.PlayerActionsTest do
 
   alias SuperPoker.IrcDataset.PlayerActions
 
+  import ExUnit.CaptureIO
+
   describe "parse/1" do
     test "二人玩家到最后showhands" do
       action_str = "Jak       820830094  2  1 Bc  kc    kc    k          850   40   80 7c Ac"
@@ -37,7 +39,12 @@ defmodule SuperPoker.IrcDataset.PlayerActionsTest do
 
     test "错误数据比如holdem3/199901/pdb/pdb.AcesUp返回nil" do
       invalid_action_str = "1234234"
-      assert PlayerActions.parse(invalid_action_str) == nil
+
+      parse_fun = fn ->
+        assert PlayerActions.parse(invalid_action_str) == nil
+      end
+
+      assert capture_io(parse_fun) =~ "HELP"
     end
   end
 end
