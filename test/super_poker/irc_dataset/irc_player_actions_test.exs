@@ -2,7 +2,6 @@ defmodule SuperPoker.IrcDataset.IrcPlayerActionsTest do
   use SuperPoker.DataCase
 
   alias SuperPoker.Repo
-  alias Ecto.Changeset
   alias SuperPoker.IrcDataset.PlayerActions
   alias SuperPoker.IrcDataset.IrcPlayerActions
 
@@ -56,13 +55,12 @@ defmodule SuperPoker.IrcDataset.IrcPlayerActionsTest do
       }
 
       # 第一次插入成功
-      assert {:ok, %IrcPlayerActions{}} = IrcPlayerActions.save_player_actions(player_actions)
-      # 第二次失败
-      assert {:error, %Changeset{} = changeset} =
+      assert {:ok, %IrcPlayerActions{pos: 1}} =
                IrcPlayerActions.save_player_actions(player_actions)
 
-      # 如何更优雅的验证%Changeset{}当中, errors的部分
-      assert changeset.errors[:username]
+      # 第二次覆盖
+      assert {:ok, %IrcPlayerActions{pos: 2}} =
+               IrcPlayerActions.save_player_actions(%{player_actions | pos: 2})
     end
   end
 end
