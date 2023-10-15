@@ -122,3 +122,18 @@ SELECT count(*) FROM irc_player_actions;
 SELECT reltuples AS estimate FROM pg_class WHERE relname = 'irc_player_actions';
 # 查看某一个
 SELECT * FROM irc_player_actions WHERE game_id = 905133641;
+
+** ERROR
+2023-10-15 23:18:01 /Users/jiaw/dev/poker-irc-dataset/output/holdem3/199908/pdb/pdb.Ragman
+** (Postgrex.Error) ERROR 22021 (character_not_in_repertoire) invalid byte sequence for encoding "UTF8": 0x00
+    (ecto_sql 3.10.1) lib/ecto/adapters/sql.ex:913: Ecto.Adapters.SQL.raise_sql_call_error/1
+    (ecto 3.10.3) lib/ecto/repo/schema.ex:764: Ecto.Repo.Schema.apply/4
+    (ecto 3.10.3) lib/ecto/repo/schema.ex:377: anonymous fn/15 in Ecto.Repo.Schema.do_insert/4
+    (super_poker 0.1.0) lib/super_poker/irc_dataset/dump_irc_dataset.ex:46: anonymous fn/1 in SuperPoker.IrcDataset.DumpIrcDataset.dump_data_to
+_db/0
+    (elixir 1.15.4) lib/stream.ex:482: anonymous fn/4 in Stream.each/2
+    (elixir 1.15.4) lib/enum.ex:4830: Enumerable.List.reduce/3
+    (elixir 1.15.4) lib/stream.ex:1027: Stream.do_transform_inner_list/7
+    (elixir 1.15.4) lib/stream.ex:1828: Enumerable.Stream.do_each/4
+    (elixir 1.15.4) lib/stream.ex:690: Stream.run/1
+    iex:1: (file)

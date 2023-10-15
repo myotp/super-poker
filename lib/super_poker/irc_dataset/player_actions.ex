@@ -22,6 +22,15 @@ defmodule SuperPoker.IrcDataset.PlayerActions do
   # num       820830094  2  2 Bk  b     b     k         1420   40    0 9h Kh
   # ZhaoYun   975790230  6  2 B   -     -     -         2671   20   30
   def parse(str) do
+    # /Users/jiaw/dev/poker-irc-dataset/output/holdem3/199908/pdb/pdb.Ragman
+    if String.length(str) > 100 do
+      nil
+    else
+      do_parse(str)
+    end
+  end
+
+  def do_parse(str) do
     case String.split(str, " ", trim: true) do
       [
         username,
