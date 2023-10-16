@@ -29,8 +29,10 @@ defmodule SuperPoker.IrcDataset.IrcTable do
 
   def changeset(attrs) do
     %__MODULE__{}
-    |> cast(attrs, all_fields())
-    |> validate_required(all_fields())
+    # 默认empty_values为[""]会把""当作NULL来处理
+    |> cast(attrs, all_fields(), empty_values: [])
+    # validate_required会把可能的"" community_cards当作违反约定
+    |> validate_required(all_fields() -- [:community_cards])
     |> unique_constraint(:game_id, name: :irc_tables_pkey)
   end
 end

@@ -48,5 +48,20 @@ defmodule SuperPoker.IrcDataset.IrcTableTest do
       # 验证内容不变
       assert %IrcTable{blind: 10} = Repo.get_by(IrcTable, game_id: 5001)
     end
+
+    test "在公共牌尚未发出即结束" do
+      table = %Table{
+        game_id: 5002,
+        blind: 5,
+        pot_after_preflop: 20,
+        pot_after_flop: 0,
+        pot_after_turn: 0,
+        pot_after_river: 20,
+        community_cards: ""
+      }
+
+      assert {:ok, _} = IrcTable.save_table(table)
+      assert %IrcTable{blind: 5, community_cards: ""} = Repo.get_by(IrcTable, game_id: 5002)
+    end
   end
 end
