@@ -2,9 +2,11 @@ defmodule SuperPoker.IrcDataset.IrcGameTest do
   use SuperPoker.DataCase
 
   alias SuperPoker.Repo
+  alias SuperPoker.IrcDataset.Table
   alias SuperPoker.IrcDataset.GamePlayers
   alias SuperPoker.IrcDataset.PlayerActions
   alias SuperPoker.IrcDataset.IrcPlayerActions
+  alias SuperPoker.IrcDataset.IrcTable
   alias SuperPoker.IrcDataset.IrcGame
 
   describe "存储game->players到DB" do
@@ -44,8 +46,8 @@ defmodule SuperPoker.IrcDataset.IrcGameTest do
     end
   end
 
-  describe "作为整合模块读取的时候既有games内容又有players_actions内容" do
-    test "读取game与两玩家操作" do
+  describe "作为整合模块读取game全部信息" do
+    test "读取game与两玩家操作以及牌桌pot公共牌等所有信息" do
       game_players = %GamePlayers{
         game_id: 8001,
         num_players: 2,
@@ -82,12 +84,27 @@ defmodule SuperPoker.IrcDataset.IrcGameTest do
       }
       |> IrcPlayerActions.save_player_actions()
 
+      %Table{
+        game_id: 8001,
+        blind: 2,
+        pot_after_preflop: 10,
+        pot_after_flop: 20,
+        pot_after_turn: 30,
+        pot_after_river: 40,
+        community_cards: "AH KH QH JH TH"
+      }
+      |> IrcTable.save_table()
+
       assert irc_game = %IrcGame{id: ^id} = IrcGame.load_game_with_player_actions(8001)
+
       assert irc_game.players_actions != []
+      assert irc_game.table != nil
 
       assert ["Anna", "Bob"] ==
                get_in(irc_game.players_actions, [Access.all(), Access.key(:username)])
                |> Enum.sort()
+
+      assert irc_game.table.blind == 2
     end
   end
 end

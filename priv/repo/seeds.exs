@@ -11,8 +11,10 @@
 # and so on) as they will fail if something goes wrong.
 alias SuperPoker.IrcDataset.GamePlayers
 alias SuperPoker.IrcDataset.PlayerActions
+alias SuperPoker.IrcDataset.Table
 alias SuperPoker.IrcDataset.IrcPlayerActions
 alias SuperPoker.IrcDataset.IrcGame
+alias SuperPoker.IrcDataset.IrcTable
 
 %GamePlayers{
   game_id: 8001,
@@ -48,3 +50,14 @@ alias SuperPoker.IrcDataset.IrcGame
   winnings: 40
 }
 |> IrcPlayerActions.save_player_actions()
+
+%Table{
+  game_id: 8001,
+  blind: 2,
+  pot_after_preflop: 10,
+  pot_after_flop: 20,
+  pot_after_turn: 30,
+  pot_after_river: 40,
+  community_cards: "AH KH QH JH TH"
+}
+|> IrcTable.save_table()

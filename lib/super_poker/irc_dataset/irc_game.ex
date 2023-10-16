@@ -6,6 +6,7 @@ defmodule SuperPoker.IrcDataset.IrcGame do
   alias SuperPoker.IrcDataset.GamePlayers
   alias SuperPoker.Repo
   alias SuperPoker.IrcDataset.IrcGame
+  alias SuperPoker.IrcDataset.IrcTable
   alias SuperPoker.IrcDataset.IrcPlayerActions
 
   schema "irc_games" do
@@ -13,6 +14,7 @@ defmodule SuperPoker.IrcDataset.IrcGame do
     field :num_players, :integer
     field :players, {:array, :string}
     has_many :players_actions, IrcPlayerActions, references: :game_id, foreign_key: :game_id
+    has_one :table, IrcTable, references: :game_id, foreign_key: :game_id
   end
 
   def save_game_players(%GamePlayers{} = game_players) do
@@ -39,6 +41,6 @@ defmodule SuperPoker.IrcDataset.IrcGame do
         where: game.game_id == ^game_id
 
     Repo.one(query)
-    |> Repo.preload(:players_actions)
+    |> Repo.preload([:players_actions, :table])
   end
 end
