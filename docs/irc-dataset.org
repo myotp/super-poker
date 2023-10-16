@@ -137,3 +137,6 @@ _db/0
     (elixir 1.15.4) lib/stream.ex:1828: Enumerable.Stream.do_each/4
     (elixir 1.15.4) lib/stream.ex:690: Stream.run/1
     iex:1: (file)
+
+# 读取IrcGame
+IrcGame.load_game_with_player_actions(8001)

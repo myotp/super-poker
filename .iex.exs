@@ -32,3 +32,4 @@ dev_table_config = %{
 
 # IRC dataset
 alias SuperPoker.IrcDataset.DumpIrcDataset
+alias SuperPoker.IrcDataset.IrcGame
