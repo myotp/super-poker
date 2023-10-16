@@ -1,0 +1,143 @@
+* Michael Maurer's IRC Poker Database
+http://poker.cs.ualberta.ca/irc_poker_database.html
+https://github.com/allenfrostline/PokerHandsDataset/tree/master
+
+* Prepare Data
+mkdir ~/dev/poker-irc-dataset
+cd ~/dev/poker-irc-dataset
+wget http://poker.cs.ualberta.ca/IRC/IRCdata.tgz
+cd ~/dev/poker-irc-dataset
+ls -lh IRCdata.tgz
+tar -xvf IRCdata.tgz
+ls -lh IRCdata
+mkdir sample
+cp IRCdata/holdem3.200110.tgz sample
+
+* Extract Clean and Browse Data
+# py3 venv
+python3 -m venv ~/.py3venv
+source ~/.py3venv/bin/activate
+pip install --upgrade pip
+pip install colorama
+
+# extract
+python3 ~/dev/super-poker/lib/super_poker/irc_dataset/docs/extract.py
+cat ~/dev/poker-irc-dataset/sample/hands.json | jq "."
+
+# clean
+cd ~/dev/poker-irc-dataset/sample
+cp ~/dev/super-poker/lib/super_poker/irc_dataset/docs/clean.py .
+python3 clean.py
+
+# browse
+cd ~/dev/poker-irc-dataset/sample
+cp ~/dev/super-poker/lib/super_poker/irc_dataset/docs/browse.py .
+python3 browse.py
+
+* 探索
+cd ~/dev/poker-irc-dataset/sample/holdem3/200110
+# 先挑选个玩家个人的
+ls -l pdb
+# 选出文件内容大小较小的pdb.rivrgod作为例子分析
+ls -l pdb/pdb.rivrgod
+
+# 看起来1跟5才有最终对手手牌，其它都fold了？
+cat pdb/pdb.rivrgod
+rivrgod   1004390980  2  2 Br  k     k     rrrrrrrrrrrrrrrrrrrrrrrrrA   5110 5110 10220 Qd 8c
+rivrgod   1004391044  2  1 Bc  k     k     brrrrrrrrr  10220 1950 3800
+rivrgod   1004391076  2  2 Bk  k     k     rrrrrrrrrrrr  12070 2450 4800
+rivrgod   1004391107  2  1 Brc b     brrr  -        14420  900 1700
+rivrgod   1004391128  2  2 Bk  k     k     rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr  15220 10650 21300 Jc Kd
+
+# 再根据玩家名字找对局
+grep rivrgod hroster
+1004390980  2 Voyeur rivrgod
+1004391044  2 Voyeur rivrgod
+1004391076  2 Voyeur rivrgod
+1004391107  2 Voyeur rivrgod
+1004391128  2 Voyeur rivrgod
+
+# 根据此二人对战构建一组小数据
+cd ~/dev/poker-irc-dataset
+mkdir -p xyz/holdem3/200110/pdb
+# hroster只保留rivrgod对战
+grep rivrgod sample/holdem3/200110/hroster | tee xyz/holdem3/200110/hroster
+# pdb只保留两位玩家数据
+cp sample/holdem3/200110/pdb/pdb.rivrgod xyz/holdem3/200110/pdb
+cp sample/holdem3/200110/pdb/pdb.Voyeur xyz/holdem3/200110/pdb
+# hdb也是仅保留二者对局
+touch xyz/holdem3/200110/hdb
+grep 1004390980 sample/holdem3/200110/hdb >> xyz/holdem3/200110/hdb
+grep 1004391044 sample/holdem3/200110/hdb >> xyz/holdem3/200110/hdb
+grep 1004391076 sample/holdem3/200110/hdb >> xyz/holdem3/200110/hdb
+grep 1004391107 sample/holdem3/200110/hdb >> xyz/holdem3/200110/hdb
+grep 1004391128 sample/holdem3/200110/hdb >> xyz/holdem3/200110/hdb
+cat xyz/holdem3/200110/hdb
+
+# extract
+python3 ~/dev/super-poker/lib/super_poker/irc_dataset/docs/extract.py
+# clean
+cd ~/dev/poker-irc-dataset/xyz
+cp ~/dev/super-poker/lib/super_poker/irc_dataset/docs/clean.py .
+python3 clean.py
+# browse
+cp ~/dev/super-poker/lib/super_poker/irc_dataset/docs/browse.py .
+python3 browse.py
+
+* 简化版README例子readme
+# 根据此二人对战构建一组小数据
+cd ~/dev/poker-irc-dataset
+mkdir tmp
+cp IRCdata/holdem.199601.tgz tmp
+cd tmp
+tar -xvf holdem.199601.tgz
+cd ~/dev/poker-irc-dataset
+mkdir -p readme/holdem/199601/pdb
+# hroster提取 820830094
+grep 820830094 tmp/holdem/199601/hroster | tee readme/holdem/199601/hroster
+# pdb只保留两位玩家数据
+grep 820830094 tmp/holdem/199601/pdb/pdb.Jak | tee readme/holdem/199601/pdb/pdb.Jak
+grep 820830094 tmp/holdem/199601/pdb/pdb.num | tee readme/holdem/199601/pdb/pdb.num
+# hdb也是仅保留二者对局
+grep 820830094 tmp/holdem/199601/hdb | tee readme/holdem/199601/hdb
+# extract
+python3 ~/dev/super-poker/lib/super_poker/irc_dataset/docs/extract.py
+cd ~/dev/poker-irc-dataset/readme
+cp ~/dev/super-poker/lib/super_poker/irc_dataset/docs/clean.py .
+python3 clean.py
+# browse
+cp ~/dev/super-poker/lib/super_poker/irc_dataset/docs/browse.py .
+python3 browse.py
+* Ecto Schema
+# 解压IRC数据文件并导入Postgres
+DumpIrcDataset.run()
+# 数据库中查看
+psql -d super_poker_dev
+\d irc_player_actions
+# 采样一些行显示一下
+SELECT * FROM irc_games TABLESAMPLE SYSTEM(0.2);
+# 准确行数
+SELECT count(*) FROM irc_games;
+# 大致估算多少行
+SELECT reltuples AS estimate FROM pg_class WHERE relname = 'irc_games';
+# 查看某一个
+SELECT * FROM irc_player_actions WHERE game_id = 905133641;
+
+** ERROR
+2023-10-15 23:18:01 /Users/jiaw/dev/poker-irc-dataset/output/holdem3/199908/pdb/pdb.Ragman
+** (Postgrex.Error) ERROR 22021 (character_not_in_repertoire) invalid byte sequence for encoding "UTF8": 0x00
+    (ecto_sql 3.10.1) lib/ecto/adapters/sql.ex:913: Ecto.Adapters.SQL.raise_sql_call_error/1
+    (ecto 3.10.3) lib/ecto/repo/schema.ex:764: Ecto.Repo.Schema.apply/4
+    (ecto 3.10.3) lib/ecto/repo/schema.ex:377: anonymous fn/15 in Ecto.Repo.Schema.do_insert/4
+    (super_poker 0.1.0) lib/super_poker/irc_dataset/dump_irc_dataset.ex:46: anonymous fn/1 in SuperPoker.IrcDataset.DumpIrcDataset.dump_data_to
+_db/0
+    (elixir 1.15.4) lib/stream.ex:482: anonymous fn/4 in Stream.each/2
+    (elixir 1.15.4) lib/enum.ex:4830: Enumerable.List.reduce/3
+    (elixir 1.15.4) lib/stream.ex:1027: Stream.do_transform_inner_list/7
+    (elixir 1.15.4) lib/stream.ex:1828: Enumerable.Stream.do_each/4
+    (elixir 1.15.4) lib/stream.ex:690: Stream.run/1
+    iex:1: (file)
+
+# 读取IrcGame
+IrcGame.load_game_with_player_actions(8001)
+IrcGame.load_game_with_player_actions(812148610)

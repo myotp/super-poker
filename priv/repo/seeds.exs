@@ -9,3 +9,55 @@
 #
 # We recommend using the bang functions (`insert!`, `update!`
 # and so on) as they will fail if something goes wrong.
+alias SuperPoker.IrcDataset.GamePlayers
+alias SuperPoker.IrcDataset.PlayerActions
+alias SuperPoker.IrcDataset.Table
+alias SuperPoker.IrcDataset.IrcPlayerActions
+alias SuperPoker.IrcDataset.IrcGame
+alias SuperPoker.IrcDataset.IrcTable
+
+%GamePlayers{
+  game_id: 8001,
+  num_players: 2,
+  players: ["Anna", "Bob"]
+}
+|> IrcGame.save_game_players()
+
+%PlayerActions{
+  username: "Anna",
+  game_id: 8001,
+  num_players: 2,
+  pos: 1,
+  preflop: "Bc",
+  flop: "k",
+  turn: "f",
+  bankroll: 500,
+  total_bet: 20,
+  winnings: 0
+}
+|> IrcPlayerActions.save_player_actions()
+
+%PlayerActions{
+  username: "Bob",
+  game_id: 8001,
+  num_players: 2,
+  pos: 2,
+  preflop: "Bk",
+  flop: "k",
+  turn: nil,
+  bankroll: 500,
+  total_bet: 20,
+  winnings: 40
+}
+|> IrcPlayerActions.save_player_actions()
+
+%Table{
+  game_id: 8001,
+  blind: 2,
+  pot_after_preflop: 10,
+  pot_after_flop: 20,
+  pot_after_turn: 30,
+  pot_after_river: 40,
+  community_cards: "AH KH QH JH TH"
+}
+|> IrcTable.save_table()
