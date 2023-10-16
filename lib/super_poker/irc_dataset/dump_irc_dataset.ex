@@ -108,8 +108,9 @@ defmodule SuperPoker.IrcDataset.DumpIrcDataset do
         {:ok, _} ->
           :ok
 
-        {:error, _} ->
-          IO.puts("ERROR: table_pots_and_community_cards.game_id")
+        {:error, error} ->
+          IO.inspect(error, label: "FAIL")
+          IO.puts("ERROR: #{table_pots_and_community_cards.game_id}")
       end
     end)
     |> Stream.run()
