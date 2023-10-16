@@ -5,16 +5,6 @@ defmodule SuperPoker.IrcDataset.IrcPlayerActions do
   alias SuperPoker.Repo
   alias SuperPoker.IrcDataset.PlayerActions
 
-  @required_fields [
-    :username,
-    :game_id,
-    :num_players,
-    :pos,
-    :preflop,
-    :bankroll,
-    :total_bet,
-    :winnings
-  ]
   @optional_fields [:flop, :turn, :river, :hole_cards]
 
   @primary_key false
@@ -37,6 +27,10 @@ defmodule SuperPoker.IrcDataset.IrcPlayerActions do
     field :hole_cards, :string
   end
 
+  defp all_fields() do
+    __MODULE__.__schema__(:fields)
+  end
+
   def save_player_actions(%PlayerActions{} = player_actions) do
     player_actions
     |> Map.from_struct()
@@ -45,10 +39,10 @@ defmodule SuperPoker.IrcDataset.IrcPlayerActions do
     |> Repo.insert(conflict_target: [:username, :game_id], on_conflict: :nothing)
   end
 
-  def changeset(irc_player_actions \\ %__MODULE__{}, attrs) do
-    irc_player_actions
-    |> cast(attrs, @required_fields ++ @optional_fields)
-    |> validate_required(@required_fields)
+  def changeset(attrs) do
+    %__MODULE__{}
+    |> cast(attrs, all_fields())
+    |> validate_required(all_fields() -- @optional_fields)
     |> unique_constraint([:username, :game_id], name: :irc_player_actions_pkey)
   end
 end
