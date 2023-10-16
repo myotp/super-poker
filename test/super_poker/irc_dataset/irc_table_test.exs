@@ -43,7 +43,10 @@ defmodule SuperPoker.IrcDataset.IrcTableTest do
       }
 
       assert {:ok, _} = IrcTable.save_table(table)
+      # 第二次重复PK写入简单忽略即可
       assert {:ok, _} = IrcTable.save_table(%Table{table | blind: 20})
+      # 验证内容不变
+      assert %IrcTable{blind: 10} = Repo.get_by(IrcTable, game_id: 5001)
     end
   end
 end

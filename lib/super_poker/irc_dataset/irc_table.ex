@@ -20,7 +20,7 @@ defmodule SuperPoker.IrcDataset.IrcTable do
     table
     |> Map.from_struct()
     |> changeset()
-    |> Repo.insert()
+    |> Repo.insert(conflict_target: [:game_id], on_conflict: :nothing)
   end
 
   defp all_fields() do
