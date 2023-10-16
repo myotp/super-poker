@@ -8,8 +8,6 @@ defmodule SuperPoker.IrcDataset.IrcGame do
   alias SuperPoker.IrcDataset.IrcGame
   alias SuperPoker.IrcDataset.IrcPlayerActions
 
-  @fields [:game_id, :num_players, :players]
-
   schema "irc_games" do
     field :game_id, :integer
     field :num_players, :integer
@@ -24,10 +22,14 @@ defmodule SuperPoker.IrcDataset.IrcGame do
     |> Repo.insert(conflict_target: [:game_id], on_conflict: :nothing)
   end
 
-  def changeset(irc_game \\ %__MODULE__{}, attrs) do
-    irc_game
-    |> cast(attrs, @fields)
-    |> validate_required(@fields)
+  defp all_fields() do
+    __MODULE__.__schema__(:fields) -- [:id]
+  end
+
+  def changeset(attrs) do
+    %__MODULE__{}
+    |> cast(attrs, all_fields())
+    |> validate_required(all_fields())
     |> unique_constraint(:game_id)
   end
 
