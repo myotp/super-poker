@@ -2,8 +2,6 @@ defmodule SuperPoker.IrcDataset.DumpIrcDataset do
   alias SuperPoker.IrcDataset.PlayerActions
   alias SuperPoker.IrcDataset.IrcPlayerActions
 
-  # TODO: 1 disable Ecto log
-  # 2. 覆盖而不是出错upsert对于primarykey重复的情况
   @dst_folder "/Users/jiaw/dev/poker-irc-dataset/output/"
   @source_irc_tgz_file "/Users/jiaw/dev/poker-irc-dataset/IRCdata.tgz"
 
