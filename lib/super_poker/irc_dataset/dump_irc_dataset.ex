@@ -1,6 +1,13 @@
 defmodule SuperPoker.IrcDataset.DumpIrcDataset do
-  alias SuperPoker.IrcDataset.PlayerActions
+  # DB Ecto模块
+  alias SuperPoker.IrcDataset.IrcGame
+  alias SuperPoker.IrcDataset.IrcTable
   alias SuperPoker.IrcDataset.IrcPlayerActions
+
+  # 纯函数的模块
+  alias SuperPoker.IrcDataset.GamePlayers
+  alias SuperPoker.IrcDataset.PlayerActions
+  alias SuperPoker.IrcDataset.Table
 
   @dst_folder "/Users/jiaw/dev/poker-irc-dataset/output/"
   @source_irc_tgz_file "/Users/jiaw/dev/poker-irc-dataset/IRCdata.tgz"
@@ -10,7 +17,9 @@ defmodule SuperPoker.IrcDataset.DumpIrcDataset do
     extract_file(file, dir)
     data_files_folder = Path.join(dir, "IRCdata")
     extract_data_files(data_files_folder)
-    dump_data_to_db()
+    dump_games_to_db()
+    # dump_player_actions_to_db()
+    dump_tables_to_db()
   end
 
   def extract_data_files(folder) do
@@ -25,7 +34,7 @@ defmodule SuperPoker.IrcDataset.DumpIrcDataset do
     :erl_tar.extract(~c'#{filename}', [:compressed, {:cwd, ~c'#{to_folder}/'}])
   end
 
-  def dump_data_to_db() do
+  def dump_player_actions_to_db() do
     disable_ecto_logs()
 
     Path.wildcard("#{@dst_folder}/holdem3/*/pdb/pdb.*")
@@ -47,6 +56,60 @@ defmodule SuperPoker.IrcDataset.DumpIrcDataset do
 
         {:error, _} ->
           IO.puts("ERROR: player_action.game_id")
+      end
+    end)
+    |> Stream.run()
+  end
+
+  def dump_games_to_db() do
+    disable_ecto_logs()
+
+    Path.wildcard("#{@dst_folder}/holdem3/*/hroster")
+    |> Stream.map(fn filename ->
+      IO.puts("#{timestamp()} #{filename}")
+      File.read!(filename)
+    end)
+    |> Stream.map(fn content -> String.split(content, "\n", trim: true) end)
+    |> Stream.map(fn lines ->
+      lines
+      |> Enum.map(fn line -> GamePlayers.parse(line) end)
+      |> Enum.reject(&is_nil/1)
+    end)
+    |> Stream.concat()
+    |> Stream.each(fn game_players ->
+      case IrcGame.save_game_players(game_players) do
+        {:ok, _} ->
+          :ok
+
+        {:error, _} ->
+          IO.puts("ERROR: #{game_players.game_id}")
+      end
+    end)
+    |> Stream.run()
+  end
+
+  def dump_tables_to_db() do
+    disable_ecto_logs()
+
+    Path.wildcard("#{@dst_folder}/holdem3/*/hdb")
+    |> Stream.map(fn filename ->
+      IO.puts("#{timestamp()} #{filename}")
+      File.read!(filename)
+    end)
+    |> Stream.map(fn content -> String.split(content, "\n", trim: true) end)
+    |> Stream.map(fn lines ->
+      lines
+      |> Enum.map(fn line -> Table.parse(line) end)
+      |> Enum.reject(&is_nil/1)
+    end)
+    |> Stream.concat()
+    |> Stream.each(fn table_pots_and_community_cards ->
+      case IrcTable.save_table(table_pots_and_community_cards) do
+        {:ok, _} ->
+          :ok
+
+        {:error, _} ->
+          IO.puts("ERROR: table_pots_and_community_cards.game_id")
       end
     end)
     |> Stream.run()

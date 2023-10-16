@@ -25,5 +25,15 @@ defmodule SuperPoker.IrcDataset.GamePlayersTest do
 
       assert capture_io(parse_fun) =~ "HELP"
     end
+
+    test "错误的数据的情况" do
+      invalid_players_str = "xyz  2 Anna Bob"
+
+      parse_fun = fn ->
+        assert GamePlayers.parse(invalid_players_str) == nil
+      end
+
+      assert capture_io(parse_fun) =~ "HELP"
+    end
   end
 end
