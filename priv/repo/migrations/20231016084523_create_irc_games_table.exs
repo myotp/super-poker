@@ -3,7 +3,7 @@ defmodule SuperPoker.Repo.Migrations.CreateIrcGamesTable do
 
   def change do
     create table(:irc_games) do
-      add :game_id, :integer, null: false
+      add :game_id, :bigint, null: false
       add :num_players, :integer, null: false
       add :players, {:array, :text}, null: false
     end

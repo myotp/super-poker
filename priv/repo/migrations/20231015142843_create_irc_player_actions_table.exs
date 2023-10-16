@@ -5,7 +5,7 @@ defmodule SuperPoker.Repo.Migrations.CreateIrcPlayerActionsTable do
     create table(:irc_player_actions, primary_key: false) do
       # 无需id做主键, username+game_id即可
       add :username, :text, null: false, primary_key: true
-      add :game_id, :integer, null: false, primary_key: true
+      add :game_id, :bigint, null: false, primary_key: true
 
       add :num_players, :integer, null: false
       add :pos, :integer, null: false

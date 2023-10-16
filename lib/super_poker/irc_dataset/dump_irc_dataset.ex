@@ -18,7 +18,7 @@ defmodule SuperPoker.IrcDataset.DumpIrcDataset do
     data_files_folder = Path.join(dir, "IRCdata")
     extract_data_files(data_files_folder)
     dump_games_to_db()
-    # dump_player_actions_to_db()
+    dump_player_actions_to_db()
     dump_tables_to_db()
   end
 
