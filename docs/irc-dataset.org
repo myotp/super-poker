@@ -115,11 +115,11 @@ DumpIrcDataset.run()
 psql -d super_poker_dev
 \d irc_player_actions
 # 采样一些行显示一下
-SELECT * FROM irc_player_actions TABLESAMPLE SYSTEM(0.02);
+SELECT * FROM irc_games TABLESAMPLE SYSTEM(0.2);
 # 准确行数
-SELECT count(*) FROM irc_player_actions;
+SELECT count(*) FROM irc_games;
 # 大致估算多少行
-SELECT reltuples AS estimate FROM pg_class WHERE relname = 'irc_player_actions';
+SELECT reltuples AS estimate FROM pg_class WHERE relname = 'irc_games';
 # 查看某一个
 SELECT * FROM irc_player_actions WHERE game_id = 905133641;
 
@@ -140,3 +140,4 @@ _db/0
 
 # 读取IrcGame
 IrcGame.load_game_with_player_actions(8001)
+IrcGame.load_game_with_player_actions(812148610)

@@ -23,7 +23,7 @@ defmodule SuperPoker.IrcDataset.DumpIrcDataset do
   end
 
   def extract_data_files(folder) do
-    Path.wildcard("#{folder}/holdem?.*.tgz")
+    Path.wildcard("#{folder}/nolimit.*.tgz")
     |> Enum.each(fn filename ->
       IO.puts("#{timestamp()} Extracting #{filename}")
       extract_file(filename, @dst_folder)
@@ -37,7 +37,7 @@ defmodule SuperPoker.IrcDataset.DumpIrcDataset do
   def dump_player_actions_to_db() do
     disable_ecto_logs()
 
-    Path.wildcard("#{@dst_folder}/holdem3/*/pdb/pdb.*")
+    Path.wildcard("#{@dst_folder}/nolimit/*/pdb/pdb.*")
     |> Stream.map(fn filename ->
       IO.puts("#{timestamp()} #{filename}")
       File.read!(filename)
@@ -64,7 +64,7 @@ defmodule SuperPoker.IrcDataset.DumpIrcDataset do
   def dump_games_to_db() do
     disable_ecto_logs()
 
-    Path.wildcard("#{@dst_folder}/holdem3/*/hroster")
+    Path.wildcard("#{@dst_folder}/nolimit/*/hroster")
     |> Stream.map(fn filename ->
       IO.puts("#{timestamp()} #{filename}")
       File.read!(filename)
@@ -91,7 +91,7 @@ defmodule SuperPoker.IrcDataset.DumpIrcDataset do
   def dump_tables_to_db() do
     disable_ecto_logs()
 
-    Path.wildcard("#{@dst_folder}/holdem3/*/hdb")
+    Path.wildcard("#{@dst_folder}/nolimit/*/hdb")
     |> Stream.map(fn filename ->
       IO.puts("#{timestamp()} #{filename}")
       File.read!(filename)
