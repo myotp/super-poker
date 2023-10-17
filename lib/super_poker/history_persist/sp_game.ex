@@ -1,7 +1,9 @@
 defmodule SuperPoker.HistoryPersist.SpGame do
   use Ecto.Schema
   import Ecto.Changeset
+
   alias SuperPoker.Repo
+  alias SuperPoker.HistoryPersist.SpGamePlayer
 
   schema "sp_games" do
     field :start_time, :naive_datetime
@@ -9,6 +11,8 @@ defmodule SuperPoker.HistoryPersist.SpGame do
     field :sb_amount, :float
     field :bb_amount, :float
     field :community_cards, :string
+
+    has_many :players, SpGamePlayer, foreign_key: :game_id, references: :id
   end
 
   defp all_fields() do
