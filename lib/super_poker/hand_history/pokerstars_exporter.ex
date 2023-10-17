@@ -1,14 +1,71 @@
 defmodule SuperPoker.HandHistory.PokerstarsExporter do
   alias SuperPoker.HandHistory.HandHistory
 
-  # TODO: 用上模版LEEx还是HEEx
-  def to_string(%HandHistory{}) do
+  def to_string(%HandHistory{} = hh, opts \\ []) do
+    [
+      table_metadata(hh),
+      players_info(hh),
+      blinds_info(hh),
+      hole_cards_info(hh, opts),
+      actions(hh),
+      summary(hh)
+    ]
+    |> Enum.join("\n")
+  end
+
+  def table_metadata(%HandHistory{} = hh) do
     """
-    SuperPoker Hand #12345:  Hold'em No Limit ($2.50/$5.00 USD) - 1999-12-31 23:59:59
-    Table 'Rigel' 6-max Seat #4 is the button
-    Seat 1: Anna ($1091.61 in chips)
-    Seat 2: Bob ($581.64 in chips)
+    #{hh.format} Hand ##{hh.game_id}:  #{hh.poker_type} ($#{to_usd(hh.sb_amount)}/$#{to_usd(hh.bb_amount)} USD) - #{to_timestamp(hh.start_time)} ET
+    Table '#{hh.table_name}' #{hh.table_type} Seat ##{hh.button_pos} is the button
     """
+    |> String.trim_trailing("\n")
+  end
+
+  def players_info(%HandHistory{} = hh) do
+    hh.players
+    |> Enum.to_list()
+    |> Enum.sort_by(fn {pos, _player} -> pos end)
+    |> Enum.map(fn {pos, player} ->
+      "Seat #{pos}: #{player.username} ($#{to_usd(player.chips)} in chips)"
+    end)
+    |> Enum.join("\n")
+  end
+
+  def blinds_info(%HandHistory{blinds: blinds}) do
+    [{u1, sb}, {u2, bb}] =
+      blinds
+      |> Enum.to_list()
+      |> Enum.sort_by(fn {_username, amount} -> amount end)
+
+    """
+    #{u1}: posts small blind $#{to_usd(sb)}
+    #{u2}: posts big blind $#{to_usd(bb)}
+    """
+    |> String.trim_trailing("\n")
+  end
+
+  def hole_cards_info(%HandHistory{hole_cards: hole_cards}, opts) do
+    "*** HOLE CARDS ***" <> maybe_hero_hole_cards(hole_cards, opts[:hero])
+  end
+
+  defp maybe_hero_hole_cards(_, nil), do: ""
+
+  defp maybe_hero_hole_cards(hole_cards, hero_username) do
+    "\nDealt to #{hero_username} [#{capitalize_card_string(hole_cards[hero_username])}]"
+  end
+
+  def actions(%HandHistory{actions: actions}) do
+    actions
+    |> Enum.map(&action_to_string/1)
+    |> Enum.join("\n")
+  end
+
+  def summary(hh) do
+    """
+    *** SUMMARY ***
+    Board [#{capitalize_card_string(hh.community_cards)}]
+    """
+    |> String.trim_trailing("\n")
   end
 
   def action_to_string({:deal, :flop, cards}) do
@@ -50,6 +107,22 @@ defmodule SuperPoker.HandHistory.PokerstarsExporter do
 
   defp player_action_to_string({:call, amount}) do
     "calls $#{float_to_currency_str(amount)}"
+  end
+
+  defp to_timestamp(naive_datetime) do
+    naive_datetime
+    |> NaiveDateTime.truncate(:second)
+    |> NaiveDateTime.to_iso8601()
+    |> String.replace("T", " ")
+    |> String.replace("-", "/")
+  end
+
+  defp to_usd(amount) when is_integer(amount) do
+    Integer.to_string(amount)
+  end
+
+  defp to_usd(amount) when is_float(amount) do
+    float_to_currency_str(amount)
   end
 
   defp float_to_currency_str(amount) do
