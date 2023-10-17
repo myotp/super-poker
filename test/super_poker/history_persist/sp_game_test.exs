@@ -13,8 +13,8 @@ defmodule SuperPoker.HistoryPersist.SpGameTest do
         bb_amount: 0.10,
         community_cards: "AH KH QH JH TH",
         players: [
-          %{username: "Anna", pos: 1, chips: 10.0, hole_cards: "3C 2C"},
-          %{username: "Lucas", pos: 2, chips: 15.0, hole_cards: "3D 2D"}
+          %{pos: 1, username: "Anna", chips: 10.0, hole_cards: "3C 2C"},
+          %{pos: 2, username: "Lucas", chips: 15.0, hole_cards: "3D 2D"}
         ]
       }
 

@@ -31,7 +31,10 @@ defmodule SuperPoker.HandHistory.HandHistory do
     %__MODULE__{
       game_id: 246_358_000_000 + Enum.random(352_189..979_633),
       start_time: NaiveDateTime.utc_now(),
-      players: %{3 => %{username: "Lucas", chips: 15}, 5 => %{username: "Anna", chips: 20}},
+      players: [
+        %{pos: 3, username: "Lucas", chips: 15},
+        %{pos: 5, username: "Anna", chips: 20}
+      ],
       button_pos: 5,
       sb_amount: 0.25,
       bb_amount: 0.5,

@@ -21,12 +21,12 @@ defmodule SuperPoker.HandHistory.PokerstarsExporter do
     |> String.trim_trailing("\n")
   end
 
-  def players_info(%HandHistory{} = hh) do
-    hh.players
-    |> Enum.to_list()
-    |> Enum.sort_by(fn {pos, _player} -> pos end)
-    |> Enum.map(fn {pos, player} ->
-      "Seat #{pos}: #{player.username} ($#{to_usd(player.chips)} in chips)"
+  def players_info(%HandHistory{players: players}) do
+    players
+    |> Enum.map(fn m -> {m.pos, m.username, m.chips} end)
+    |> Enum.sort_by(fn {pos, _username, _chips} -> pos end)
+    |> Enum.map(fn {pos, username, chips} ->
+      "Seat #{pos}: #{username} ($#{to_usd(chips)} in chips)"
     end)
     |> Enum.join("\n")
   end
