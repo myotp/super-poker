@@ -27,9 +27,30 @@ defmodule SuperPoker.HandHistory.HandHistory do
     table_type: "6-max"
   ]
 
-  def example_actions() do
-    [
-      {:deal, :flop, "8d 5d Ac"}
-    ]
+  def example() do
+    %__MODULE__{
+      game_id: 246_358_000_000 + Enum.random(352_189..979_633),
+      start_time: NaiveDateTime.utc_now(),
+      players: %{3 => %{username: "Lucas", chips: 15}, 5 => %{username: "Anna", chips: 20}},
+      button_pos: 5,
+      sb_amount: 0.25,
+      bb_amount: 0.5,
+      blinds: %{"Lucas" => 0.5, "Anna" => 0.25},
+      hole_cards: %{"Lucas" => "AH QC", "Anna" => "3D 2D"},
+      community_cards: "QH 7H 5D 8C 9S",
+      actions: [
+        {:player, "Anna", {:call, 0.25}},
+        {:player, "Lucas", :check},
+        {:deal, :flop, "QH 7H 5D"},
+        {:player, "Lucas", :check},
+        {:player, "Anna", :check},
+        {:deal, :turn, "QH 7H 5D 8C"},
+        {:player, "Lucas", :check},
+        {:player, "Anna", :check},
+        {:deal, :river, "QH 7H 5D 8C 9S"},
+        {:player, "Lucas", :check},
+        {:player, "Anna", :check}
+      ]
+    }
   end
 end
