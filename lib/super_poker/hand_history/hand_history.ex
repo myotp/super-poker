@@ -6,7 +6,7 @@ defmodule SuperPoker.HandHistory.HandHistory do
     :start_time
   ]
 
-  def history_example() do
+  def example_actions() do
     [
       {:deal, :flop, "8d 5d Ac"}
     ]

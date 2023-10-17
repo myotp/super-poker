@@ -1,0 +1,21 @@
+PokerStars Hand #246357885964:  Hold'em No Limit ($0.05/$0.10 USD) - 2023/09/16 14:45:20 ET
+Table 'Vala' 6-max Seat #5 is the button
+Seat 4: Lucas ($10 in chips)
+Seat 5: Anna ($10 in chips)
+Anna: posts small blind $0.05
+Lucas: posts big blind $0.10
+*** HOLE CARDS ***
+Dealt to Lucas [Ah Qc]
+Anna: calls $0.05
+Lucas: checks
+*** FLOP ***
+Lucas: checks
+Anna: checks
+*** TURN ***
+Lucas: checks
+Anna: checks
+*** RIVER ***
+Lucas: checks
+Anna: checks
+*** SUMMARY ***
+Board [9d 5d Ac Th Tc]
