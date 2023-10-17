@@ -2,6 +2,8 @@ defmodule SuperPoker.HistoryPersist.SpGameTest do
   use SuperPoker.DataCase
 
   alias SuperPoker.HistoryPersist.SpGame
+  alias SuperPoker.HistoryPersist.SpGamePlayer
+  alias SuperPoker.HistoryPersist.Query
   alias SuperPoker.Repo
 
   describe "save" do
@@ -39,6 +41,19 @@ defmodule SuperPoker.HistoryPersist.SpGameTest do
                bb_amount: 0.1,
                community_cards: "AH KH QH JH TH"
              } = Repo.get(SpGame, game_id)
+
+      assert %SpGamePlayer{
+               username: "Anna",
+               pos: 1
+             } = Query.find_game_player(game_id, "Anna")
+
+      assert %SpGamePlayer{
+               username: "Lucas",
+               pos: 2
+             } = Query.find_game_player(game_id, "Lucas")
+
+      assert Query.find_game_player(game_id, "NONONO") == nil
+      assert Query.find_game_player(509_080, "Anna") == nil
     end
   end
 end
