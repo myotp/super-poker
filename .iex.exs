@@ -33,3 +33,7 @@ dev_table_config = %{
 # IRC dataset
 alias SuperPoker.IrcDataset.DumpIrcDataset
 alias SuperPoker.IrcDataset.IrcGame
+
+# PokerStars hand history
+alias SuperPoker.HandHistory.HandHistory
+alias SuperPoker.HandHistory.PokerstarsExporter

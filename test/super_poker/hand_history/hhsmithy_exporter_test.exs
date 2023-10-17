@@ -1,12 +1,12 @@
-defmodule SuperPoker.History.HhsmithyExporterTest do
+defmodule SuperPoker.HandHistory.HhsmithyExporterTest do
   use ExUnit.Case
 
-  alias SuperPoker.History.HhsmithyExporter
-  alias SuperPoker.History.GameHistory
+  alias SuperPoker.HandHistory.HhsmithyExporter
+  alias SuperPoker.HandHistory.HandHistory
 
   describe "to_string/1" do
     test "简单fold" do
-      game_history = %GameHistory{
+      hand_history = %HandHistory{
         game_id: 12345,
         sb_amount: 2.5,
         bb_amount: 5,

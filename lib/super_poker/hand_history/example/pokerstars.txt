@@ -1,0 +1,28 @@
+PokerStars Hand #246327884149:  Hold'em No Limit ($0.05/$0.10 USD) - 2023/10/10 14:45:20 ET
+Table 'Vala' 6-max Seat #5 is the button
+Seat 4: ChipStaXx07 ($10 in chips)
+Seat 5: zbarning ($10 in chips)
+zbarning: posts small blind $0.05
+ChipStaXx07: posts big blind $0.10
+*** HOLE CARDS ***
+Dealt to ChipStaXx07 [4s 2s]         <------ 这里我参考网上问题修改的
+zbarning: calls $0.05
+ChipStaXx07: checks
+*** FLOP *** [8d 5d Ac]
+ChipStaXx07: checks
+zbarning: checks
+*** TURN *** [8d 5d Ac] [Th]
+ChipStaXx07: checks
+zbarning: checks
+*** RIVER *** [8d 5d Ac Th] [Tc]
+ChipStaXx07: checks
+zbarning: checks
+*** SHOW DOWN ***
+ChipStaXx07: shows [4s 2s] (a pair of Tens)
+zbarning: shows [3c Kc] (a pair of Tens - Ace+King kicker)
+zbarning collected $0.19 from pot
+*** SUMMARY ***
+Total pot $0.20 | Rake $0.01
+Board [8d 5d Ac Th Tc]
+Seat 4: ChipStaXx07 (big blind) showed [4s 2s] and lost with a pair of Tens
+Seat 5: zbarning (button) (small blind) showed [3c Kc] and won ($0.19) with a pair of Tens
