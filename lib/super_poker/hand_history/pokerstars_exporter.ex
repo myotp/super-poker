@@ -1,12 +1,12 @@
 defmodule SuperPoker.HandHistory.PokerstarsExporter do
   alias SuperPoker.HandHistory.HandHistory
 
-  def to_string(%HandHistory{} = hh, opts \\ []) do
+  def to_string(%HandHistory{} = hh, hero) do
     [
       table_metadata(hh),
       players_info(hh),
       blinds_info(hh),
-      hole_cards_info(hh, opts),
+      hole_cards_info(hh, hero),
       actions(hh),
       summary(hh)
     ]
@@ -44,14 +44,12 @@ defmodule SuperPoker.HandHistory.PokerstarsExporter do
     |> String.trim_trailing("\n")
   end
 
-  def hole_cards_info(%HandHistory{hole_cards: hole_cards}, opts) do
-    "*** HOLE CARDS ***" <> maybe_hero_hole_cards(hole_cards, opts[:hero])
-  end
-
-  defp maybe_hero_hole_cards(_, nil), do: ""
-
-  defp maybe_hero_hole_cards(hole_cards, hero_username) do
-    "\nDealt to #{hero_username} [#{capitalize_card_string(hole_cards[hero_username])}]"
+  def hole_cards_info(%HandHistory{hole_cards: hole_cards}, hero) do
+    """
+    *** HOLE CARDS ***
+    Dealt to #{hero} [#{capitalize_card_string(hole_cards[hero])}]
+    """
+    |> String.trim_trailing("\n")
   end
 
   def actions(%HandHistory{actions: actions}) do

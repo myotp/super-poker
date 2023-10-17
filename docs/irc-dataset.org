@@ -144,4 +144,4 @@ IrcGame.load_game_with_player_actions(812148610)
 
 * PokerStars hand history
 # hero!
-HandHistory.example() |> PokerstarsExporter.to_string(hero: "Lucas") |> IO.puts()
+HandHistory.example() |> PokerstarsExporter.to_string("Lucas") |> IO.puts()

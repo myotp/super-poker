@@ -32,7 +32,7 @@ defmodule SuperPoker.HandHistory.PokerstarsExporterTest do
           ]
         }
 
-      assert PokerstarsExporter.to_string(hand_history, hero: "Lucas") ==
+      assert PokerstarsExporter.to_string(hand_history, "Lucas") ==
                """
                PokerStars Hand #246357379051:  Hold'em No Limit ($0.25/$0.50 USD) - 2023/10/17 15:59:40 ET
                Table 'Vala' 6-max Seat #5 is the button
@@ -114,29 +114,16 @@ defmodule SuperPoker.HandHistory.PokerstarsExporterTest do
   end
 
   describe "hole_cards/2" do
-    test "针对hero生成对应的牌局表示" do
+    test "根据GTO Wizard要求hero必须" do
       hand_history =
         %HandHistory{
           hole_cards: %{"Lucas" => "AH QC", "Anna" => "3D 2D"}
         }
 
-      assert PokerstarsExporter.hole_cards_info(hand_history, hero: "Lucas") ==
+      assert PokerstarsExporter.hole_cards_info(hand_history, "Lucas") ==
                """
                *** HOLE CARDS ***
                Dealt to Lucas [Ah Qc]
-               """
-               |> String.trim_trailing("\n")
-    end
-
-    test "hero没有提供的情况下" do
-      hand_history =
-        %HandHistory{
-          hole_cards: %{"Lucas" => "AH QC", "Anna" => "3D 2D"}
-        }
-
-      assert PokerstarsExporter.hole_cards_info(hand_history, []) ==
-               """
-               *** HOLE CARDS ***
                """
                |> String.trim_trailing("\n")
     end
