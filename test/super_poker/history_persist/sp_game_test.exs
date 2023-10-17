@@ -2,7 +2,7 @@ defmodule SuperPoker.HistoryPersist.SpGameTest do
   use SuperPoker.DataCase
 
   alias SuperPoker.HistoryPersist.SpGame
-  #  alias SuperPoker.Repo
+  alias SuperPoker.Repo
 
   describe "save" do
     test "简单存储" do
@@ -11,7 +11,11 @@ defmodule SuperPoker.HistoryPersist.SpGameTest do
         button_pos: 2,
         sb_amount: 0.05,
         bb_amount: 0.10,
-        community_cards: "AH KH QH JH TH"
+        community_cards: "AH KH QH JH TH",
+        players: [
+          %{username: "Anna", pos: 1, chips: 10.0, hole_cards: "3C 2C"},
+          %{username: "Lucas", pos: 2, chips: 15.0, hole_cards: "3D 2D"}
+        ]
       }
 
       assert {:ok,
@@ -34,8 +38,7 @@ defmodule SuperPoker.HistoryPersist.SpGameTest do
                sb_amount: 0.05,
                bb_amount: 0.1,
                community_cards: "AH KH QH JH TH"
-             } =
-               Repo.get(SpGame, game_id)
+             } = Repo.get(SpGame, game_id)
     end
   end
 end

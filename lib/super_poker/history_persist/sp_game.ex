@@ -29,6 +29,8 @@ defmodule SuperPoker.HistoryPersist.SpGame do
   def save_game_history(game_history) do
     game_history
     |> changeset()
+    # 这个会自动调用默认SpGamePlayer.changeset/2当然也可以改
+    |> cast_assoc(:players)
     |> Repo.insert()
   end
 end
