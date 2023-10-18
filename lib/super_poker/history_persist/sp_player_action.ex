@@ -21,7 +21,10 @@ defmodule SuperPoker.HistoryPersist.SpPlayerAction do
 
     @primary_key false
     embedded_schema do
-      field :action, :string
+      field :action, Ecto.Enum,
+        values: [check: "k", fold: "f", call: "c", raise: "r"],
+        embed_as: :dumped
+
       field :amount, :float
     end
 

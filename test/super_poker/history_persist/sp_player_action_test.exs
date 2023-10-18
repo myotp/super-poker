@@ -24,7 +24,7 @@ defmodule SuperPoker.HistoryPersist.SpPlayerActionTest do
 
       attrs = %{
         username: "Anna",
-        preflop: [%{action: "sb", amount: 0.1}, %{action: "check", amount: 0}],
+        preflop: [%{action: "check", amount: 0}],
         flop: [%{action: "check", amount: 0}],
         turn: [%{action: "raise", amount: 10}, %{action: "call", amount: 5}],
         river: [
@@ -34,24 +34,24 @@ defmodule SuperPoker.HistoryPersist.SpPlayerActionTest do
         ]
       }
 
-      SpPlayerAction.save_player_actions(game_id, attrs)
+      assert {:ok, _} =
+               SpPlayerAction.save_player_actions(game_id, attrs)
 
       assert %SpPlayerAction{
                preflop: [
-                 %PlayerAction{action: "sb", amount: 0.1},
-                 %PlayerAction{action: "check", amount: 0.0}
+                 %PlayerAction{action: :check, amount: 0.0}
                ],
                flop: [
-                 %PlayerAction{action: "check", amount: 0.0}
+                 %PlayerAction{action: :check, amount: 0.0}
                ],
                turn: [
-                 %PlayerAction{action: "raise", amount: 10.0},
-                 %PlayerAction{action: "call", amount: 5.0}
+                 %PlayerAction{action: :raise, amount: 10.0},
+                 %PlayerAction{action: :call, amount: 5.0}
                ],
                river: [
-                 %PlayerAction{action: "raise", amount: 10.0},
-                 %PlayerAction{action: "raise", amount: 20.0},
-                 %PlayerAction{action: "raise", amount: 30.0}
+                 %PlayerAction{action: :raise, amount: 10.0},
+                 %PlayerAction{action: :raise, amount: 20.0},
+                 %PlayerAction{action: :raise, amount: 30.0}
                ]
              } =
                Query.find_player_actions(game_id, "Anna")

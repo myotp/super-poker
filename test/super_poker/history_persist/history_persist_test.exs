@@ -84,24 +84,24 @@ defmodule SuperPoker.HistoryPersist.HistoryPersistTest do
       assert %SpPlayerAction{
                game_id: ^game_id,
                username: "Lucas",
-               preflop: [%PlayerAction{action: "check", amount: 0.0}],
-               flop: [%PlayerAction{action: "check", amount: 0.0}],
-               turn: [%PlayerAction{action: "check", amount: 0.0}],
+               preflop: [%PlayerAction{action: :check, amount: 0.0}],
+               flop: [%PlayerAction{action: :check, amount: 0.0}],
+               turn: [%PlayerAction{action: :check, amount: 0.0}],
                river: [
-                 %PlayerAction{action: "raise", amount: 10.0},
-                 %PlayerAction{action: "raise", amount: 50.0}
+                 %PlayerAction{action: :raise, amount: 10.0},
+                 %PlayerAction{action: :raise, amount: 50.0}
                ]
              } = lucas_actions
 
       assert %SpPlayerAction{
                game_id: ^game_id,
                username: "Anna",
-               preflop: [%PlayerAction{action: "call", amount: 5.0}],
-               flop: [%PlayerAction{action: "check", amount: 0.0}],
-               turn: [%PlayerAction{action: "check", amount: 0.0}],
+               preflop: [%PlayerAction{action: :call, amount: 5.0}],
+               flop: [%PlayerAction{action: :check, amount: 0.0}],
+               turn: [%PlayerAction{action: :check, amount: 0.0}],
                river: [
-                 %PlayerAction{action: "raise", amount: 20.0},
-                 %PlayerAction{action: "call", amount: 40.0}
+                 %PlayerAction{action: :raise, amount: 20.0},
+                 %PlayerAction{action: :call, amount: 40.0}
                ]
              } = anna_actions
     end

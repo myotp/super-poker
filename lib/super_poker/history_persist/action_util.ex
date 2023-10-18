@@ -21,8 +21,8 @@ defmodule SuperPoker.HistoryPersist.ActionUtil do
     do_actions(rest, street, username, attrs)
   end
 
-  defp action_to_attrs(:fold), do: %{action: "fold", amount: 0}
-  defp action_to_attrs(:check), do: %{action: "check", amount: 0}
-  defp action_to_attrs({:call, amount}), do: %{action: "call", amount: amount}
-  defp action_to_attrs({:raise, amount}), do: %{action: "raise", amount: amount}
+  defp action_to_attrs(:fold), do: %{action: :fold, amount: 0}
+  defp action_to_attrs(:check), do: %{action: :check, amount: 0}
+  defp action_to_attrs({:call, amount}), do: %{action: :call, amount: amount}
+  defp action_to_attrs({:raise, amount}), do: %{action: :raise, amount: amount}
 end
