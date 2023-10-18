@@ -18,17 +18,17 @@ defmodule SuperPoker.HistoryPersist.HistoryPersistTest do
         %HandHistory{
           start_time: start_time,
           players: [
-            %{pos: 3, username: "Lucas", chips: 15},
-            %{pos: 5, username: "Anna", chips: 20}
+            %{pos: 3, username: "Lucas", chips: 500},
+            %{pos: 5, username: "Anna", chips: 600}
           ],
           button_pos: 5,
-          sb_amount: 0.25,
-          bb_amount: 0.5,
-          blinds: %{"Lucas" => 0.5, "Anna" => 0.25},
-          hole_cards: %{"Lucas" => "AH QC", "Anna" => "3D 2D"},
+          sb_amount: 5,
+          bb_amount: 10,
+          blinds: %{"Anna" => 5, "Lucas" => 10},
+          hole_cards: %{"Anna" => "3D 2D", "Lucas" => "AH QC"},
           community_cards: "QH 7H 5D 8C 9S",
           actions: [
-            {:player, "Anna", {:call, 0.25}},
+            {:player, "Anna", {:call, 5}},
             {:player, "Lucas", :check},
             {:deal, :flop, "QH 7H 5D"},
             {:player, "Lucas", :check},
@@ -37,8 +37,10 @@ defmodule SuperPoker.HistoryPersist.HistoryPersistTest do
             {:player, "Lucas", :check},
             {:player, "Anna", :check},
             {:deal, :river, "QH 7H 5D 8C 9S"},
-            {:player, "Lucas", :check},
-            {:player, "Anna", :check}
+            {:player, "Lucas", {:raise, 10}},
+            {:player, "Anna", {:raise, 20}},
+            {:player, "Lucas", {:raise, 50}},
+            {:player, "Anna", {:call, 40}}
           ]
         }
 
@@ -50,15 +52,14 @@ defmodule SuperPoker.HistoryPersist.HistoryPersistTest do
         id: ^game_id,
         start_time: ^start_time,
         button_pos: 5,
-        sb_amount: 0.25,
-        bb_amount: 0.5,
+        sb_amount: 5.0,
+        bb_amount: 10.0,
         community_cards: "QH 7H 5D 8C 9S",
         # FIXME: missing blinds
         players: players,
         player_actions: player_actions
       } =
         SpGame.read_game_history_from_db(game_id)
-        |> IO.inspect(label: "DB RESULT")
 
       # =2= 验证has_many的players写入正确
       player_anna = Enum.find(players, fn p -> p.username == "Anna" end)
@@ -67,13 +68,13 @@ defmodule SuperPoker.HistoryPersist.HistoryPersistTest do
       assert %SpGamePlayer{
                username: "Anna",
                pos: 5,
-               chips: 20.0
+               chips: 600.0
              } = player_anna
 
       assert %SpGamePlayer{
                username: "Lucas",
                pos: 3,
-               chips: 15.0
+               chips: 500.0
              } = player_lucas
 
       # =3= 验证独立写入的player_actions写入正确
@@ -86,16 +87,22 @@ defmodule SuperPoker.HistoryPersist.HistoryPersistTest do
                preflop: [%PlayerAction{action: "check", amount: 0.0}],
                flop: [%PlayerAction{action: "check", amount: 0.0}],
                turn: [%PlayerAction{action: "check", amount: 0.0}],
-               river: [%PlayerAction{action: "check", amount: 0.0}]
+               river: [
+                 %PlayerAction{action: "raise", amount: 10.0},
+                 %PlayerAction{action: "raise", amount: 50.0}
+               ]
              } = lucas_actions
 
       assert %SpPlayerAction{
                game_id: ^game_id,
                username: "Anna",
-               preflop: [%PlayerAction{action: "call", amount: 0.25}],
+               preflop: [%PlayerAction{action: "call", amount: 5.0}],
                flop: [%PlayerAction{action: "check", amount: 0.0}],
                turn: [%PlayerAction{action: "check", amount: 0.0}],
-               river: [%PlayerAction{action: "check", amount: 0.0}]
+               river: [
+                 %PlayerAction{action: "raise", amount: 20.0},
+                 %PlayerAction{action: "call", amount: 40.0}
+               ]
              } = anna_actions
     end
   end
