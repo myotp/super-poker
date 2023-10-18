@@ -4,6 +4,7 @@ defmodule SuperPoker.HistoryPersist.SpGame do
 
   alias SuperPoker.Repo
   alias SuperPoker.HistoryPersist.SpGamePlayer
+  alias SuperPoker.HistoryPersist.SpPlayerAction
 
   schema "sp_games" do
     field :start_time, :naive_datetime
@@ -13,6 +14,7 @@ defmodule SuperPoker.HistoryPersist.SpGame do
     field :community_cards, :string
 
     has_many :players, SpGamePlayer, foreign_key: :game_id, references: :id
+    has_many :player_actions, SpPlayerAction, foreign_key: :game_id, references: :id
   end
 
   defp all_fields() do
@@ -32,5 +34,11 @@ defmodule SuperPoker.HistoryPersist.SpGame do
     # 这个会自动调用默认SpGamePlayer.changeset/2当然也可以改
     |> cast_assoc(:players)
     |> Repo.insert()
+  end
+
+  def read_game_history_from_db(game_id) do
+    Repo.get(__MODULE__, game_id)
+    |> Repo.preload(:players)
+    |> Repo.preload(:player_actions)
   end
 end
