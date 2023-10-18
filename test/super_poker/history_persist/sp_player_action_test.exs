@@ -23,7 +23,6 @@ defmodule SuperPoker.HistoryPersist.SpPlayerActionTest do
       {:ok, %SpGame{id: game_id}} = SpGame.save_game_history(game_history_attrs)
 
       attrs = %{
-        game_id: game_id,
         username: "Anna",
         preflop: [%{action: "sb", amount: 0.1}, %{action: "check", amount: 0}],
         flop: [%{action: "check", amount: 0}],
@@ -35,7 +34,7 @@ defmodule SuperPoker.HistoryPersist.SpPlayerActionTest do
         ]
       }
 
-      SpPlayerAction.save_player_actions(attrs)
+      SpPlayerAction.save_player_actions(game_id, attrs)
 
       assert %SpPlayerAction{
                preflop: [
@@ -56,7 +55,6 @@ defmodule SuperPoker.HistoryPersist.SpPlayerActionTest do
                ]
              } =
                Query.find_player_actions(game_id, "Anna")
-               |> IO.inspect(label: "Actions")
     end
   end
 end

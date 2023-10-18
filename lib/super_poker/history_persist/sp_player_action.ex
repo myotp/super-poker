@@ -33,16 +33,17 @@ defmodule SuperPoker.HistoryPersist.SpPlayerAction do
 
   def changeset(attrs) do
     %__MODULE__{}
-    |> cast(attrs, [:game_id, :username])
+    |> cast(attrs, [:username])
     |> cast_embed(:preflop)
     |> cast_embed(:flop)
     |> cast_embed(:turn)
     |> cast_embed(:river)
   end
 
-  def save_player_actions(attrs) do
+  def save_player_actions(game_id, attrs) do
     attrs
     |> changeset()
+    |> put_change(:game_id, game_id)
     |> Repo.insert()
   end
 end
