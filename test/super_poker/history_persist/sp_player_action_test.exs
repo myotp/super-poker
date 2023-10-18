@@ -3,6 +3,8 @@ defmodule SuperPoker.HistoryPersist.SpPlayerActionTest do
 
   alias SuperPoker.HistoryPersist.SpGame
   alias SuperPoker.HistoryPersist.SpPlayerAction
+  alias SuperPoker.HistoryPersist.SpPlayerAction.PlayerAction
+  alias SuperPoker.HistoryPersist.Query
 
   describe "t" do
     test "save_player_actions" do
@@ -23,13 +25,38 @@ defmodule SuperPoker.HistoryPersist.SpPlayerActionTest do
       attrs = %{
         game_id: game_id,
         username: "Anna",
-        preflop: [%{action: "aa11", amount: 0.1}, %{action: "dd2", amount: 35}]
+        preflop: [%{action: "sb", amount: 0.1}, %{action: "check", amount: 0}],
+        flop: [%{action: "check", amount: 0}],
+        turn: [%{action: "raise", amount: 10}, %{action: "call", amount: 5}],
+        river: [
+          %{action: "raise", amount: 10},
+          %{action: "raise", amount: 20},
+          %{action: "raise", amount: 30}
+        ]
       }
 
       SpPlayerAction.save_player_actions(attrs)
 
-      Repo.all(SpPlayerAction)
-      |> IO.inspect(label: "Actions")
+      assert %SpPlayerAction{
+               preflop: [
+                 %PlayerAction{action: "sb", amount: 0.1},
+                 %PlayerAction{action: "check", amount: 0.0}
+               ],
+               flop: [
+                 %PlayerAction{action: "check", amount: 0.0}
+               ],
+               turn: [
+                 %PlayerAction{action: "raise", amount: 10.0},
+                 %PlayerAction{action: "call", amount: 5.0}
+               ],
+               river: [
+                 %PlayerAction{action: "raise", amount: 10.0},
+                 %PlayerAction{action: "raise", amount: 20.0},
+                 %PlayerAction{action: "raise", amount: 30.0}
+               ]
+             } =
+               Query.find_player_actions(game_id, "Anna")
+               |> IO.inspect(label: "Actions")
     end
   end
 end

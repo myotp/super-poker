@@ -35,10 +35,9 @@ defmodule SuperPoker.HistoryPersist.SpPlayerAction do
     %__MODULE__{}
     |> cast(attrs, [:game_id, :username])
     |> cast_embed(:preflop)
-  end
-
-  defp all_fields() do
-    __MODULE__.__schema__(:fields)
+    |> cast_embed(:flop)
+    |> cast_embed(:turn)
+    |> cast_embed(:river)
   end
 
   def save_player_actions(attrs) do
