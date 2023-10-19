@@ -19,7 +19,7 @@ alias SuperPoker.HandHistory.HandHistory
 alias SuperPoker.HistoryPersist
 
 %GamePlayers{
-  game_id: 8001,
+  game_id: 101,
   num_players: 2,
   players: ["Anna", "Bob"]
 }
@@ -27,7 +27,7 @@ alias SuperPoker.HistoryPersist
 
 %PlayerActions{
   username: "Anna",
-  game_id: 8001,
+  game_id: 101,
   num_players: 2,
   pos: 1,
   preflop: "Bc",
@@ -41,7 +41,7 @@ alias SuperPoker.HistoryPersist
 
 %PlayerActions{
   username: "Bob",
-  game_id: 8001,
+  game_id: 101,
   num_players: 2,
   pos: 2,
   preflop: "Bk",
@@ -54,7 +54,7 @@ alias SuperPoker.HistoryPersist
 |> IrcPlayerActions.save_player_actions()
 
 %Table{
-  game_id: 8001,
+  game_id: 101,
   blind: 2,
   pot_after_preflop: 10,
   pot_after_flop: 20,
