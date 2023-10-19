@@ -7,6 +7,7 @@ defmodule SuperPoker.Repo.Migrations.CreateSpGamesTable do
       add :button_pos, :integer, null: false
       add :sb_amount, :float, null: false
       add :bb_amount, :float, null: false
+      add :blinds, {:array, :map}, null: false
       add :community_cards, :text
     end
 

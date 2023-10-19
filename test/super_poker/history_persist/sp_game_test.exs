@@ -2,6 +2,7 @@ defmodule SuperPoker.HistoryPersist.SpGameTest do
   use SuperPoker.DataCase
 
   alias SuperPoker.HistoryPersist.SpGame
+  alias SuperPoker.HistoryPersist.SpGame.Blind
   alias SuperPoker.HistoryPersist.SpGamePlayer
   alias SuperPoker.HistoryPersist.Query
   alias SuperPoker.Repo
@@ -13,6 +14,7 @@ defmodule SuperPoker.HistoryPersist.SpGameTest do
         button_pos: 2,
         sb_amount: 0.05,
         bb_amount: 0.10,
+        blinds: [%{username: "Lucas", amount: 0.05}, %{username: "Anna", amount: 0.1}],
         community_cards: "AH KH QH JH TH",
         players: [
           %{pos: 1, username: "Anna", chips: 10.0, hole_cards: "3C 2C"},
@@ -39,8 +41,19 @@ defmodule SuperPoker.HistoryPersist.SpGameTest do
                button_pos: 2,
                sb_amount: 0.05,
                bb_amount: 0.1,
+               blinds: blinds,
                community_cards: "AH KH QH JH TH"
              } = Repo.get(SpGame, game_id)
+
+      assert %Blind{
+               username: "Anna",
+               amount: 0.1
+             } = Enum.find(blinds, fn b -> b.username == "Anna" end)
+
+      assert %Blind{
+               username: "Lucas",
+               amount: 0.05
+             } = Enum.find(blinds, fn b -> b.username == "Lucas" end)
 
       assert %SpGamePlayer{
                username: "Anna",
