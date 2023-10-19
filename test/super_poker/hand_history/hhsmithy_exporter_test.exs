@@ -13,7 +13,7 @@ defmodule SuperPoker.HandHistory.HhsmithyExporterTest do
         start_time: NaiveDateTime.new!(1999, 12, 31, 23, 59, 59)
       }
 
-      assert HhsmithyExporter.to_string(game_history) ==
+      assert HhsmithyExporter.to_string(hand_history) ==
                """
                SuperPoker Hand #12345:  Hold'em No Limit ($2.50/$5.00 USD) - 1999-12-31 23:59:59
                Table 'Rigel' 6-max Seat #4 is the button

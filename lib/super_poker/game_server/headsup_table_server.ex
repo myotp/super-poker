@@ -99,7 +99,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
   end
 
   def handle_call({:join_table, username}, _from, %State{table_state: table_state} = state) do
-    IO.inspect(username, label: "新玩家加入桌子")
+    # IO.inspect(username, label: "新玩家加入桌子")
 
     case HeadsupTableState.join_table(table_state, username) do
       {:ok, updated_table_state} ->
@@ -140,9 +140,9 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
         _from,
         %State{rules: rules, rules_mod: rules_mod, rules_u2p: u2p} = state
       ) do
-    IO.puts("===>>>> [WIP] 收到玩家 #{username} 行动 #{inspect(action)}")
+    # IO.puts("===>>>> [WIP] 收到玩家 #{username} 行动 #{inspect(action)}")
     rules = rules_mod.handle_action(rules, {:player, {u2p[username], action}})
-    IO.inspect(rules, label: "最新下注之后的rules")
+    # IO.inspect(rules, label: "最新下注之后的rules")
     state = %State{state | rules: rules}
     notify_all_players_bets_info(state)
     {:reply, :ok, state, {:continue, :do_next_action}}
@@ -162,7 +162,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
         |> Enum.map(fn {pos, username} -> {username, pos} end)
         |> Map.new()
 
-      IO.inspect(rules_pos_chips, label: "===>>> Rules对应DATA")
+      #      IO.inspect(rules_pos_chips, label: "===>>> Rules对应DATA")
 
       rules =
         rules_mod.new(
@@ -172,7 +172,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
         )
 
       updated_table_state = HeadsupTableState.table_start_game!(table_state)
-      IO.inspect(updated_table_state, label: "更新过后的TableState")
+      # IO.inspect(updated_table_state, label: "更新过后的TableState")
 
       state = %State{
         state
@@ -208,7 +208,6 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
           state
       ) do
     rules = rules_mod.handle_action(rules, {:table, :notify_blind_bet_done})
-    IO.inspect(rules, label: "============ 通知完盲注的RULES")
     updated_state = %State{state | rules: rules}
     notify_all_players_bets_info(updated_state)
     {:noreply, %State{state | rules: rules}, {:continue, :deal_hole_cards}}
@@ -222,7 +221,6 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
       player_mod().deal_hole_cards(username, hole_cards)
     end)
 
-    IO.inspect(updated_table_state, label: "发完2张牌之后的state")
     {:noreply, %State{state | table_state: updated_table_state}, {:continue, :do_next_action}}
   end
 
@@ -351,9 +349,7 @@ defmodule SuperPoker.GameServer.HeadsupTableServer do
 
   defp notify_players_info(table_state) do
     all_players = HeadsupTableState.all_players(table_state)
-    IO.inspect(all_players, label: "桌子所有玩家")
     players_info = HeadsupTableState.players_info(table_state)
-    IO.inspect(all_players, label: "桌子通知所有玩家")
     player_mod().notify_players_info(all_players, players_info)
   end
 

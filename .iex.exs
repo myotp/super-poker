@@ -35,5 +35,8 @@ alias SuperPoker.IrcDataset.DumpIrcDataset
 alias SuperPoker.IrcDataset.IrcGame
 
 # PokerStars hand history
+alias SuperPoker.Repo
 alias SuperPoker.HandHistory.HandHistory
 alias SuperPoker.HandHistory.PokerstarsExporter
+alias SuperPoker.HistoryPersist
+alias SuperPoker.HistoryPersist.SpGame

@@ -36,7 +36,6 @@ defmodule SuperPoker.GameServer.HeadsupTableServerTest do
     table_id = unique_table_id()
 
     TableSupervisor.start_table(%{@table_config | id: table_id})
-    |> IO.inspect(label: "启动桌子 #{table_id} 结果")
 
     {:ok, %{table_id: table_id}}
   end
@@ -173,8 +172,8 @@ defmodule SuperPoker.GameServer.HeadsupTableServerTest do
         :ok
       end)
       # 3.4 发flop公共牌
-      |> expect(:deal_community_cards, 1, fn ["anna", "bob"], :flop, cards ->
-        IO.inspect(cards, label: "公共牌3张发出来了")
+      |> expect(:deal_community_cards, 1, fn ["anna", "bob"], :flop, _cards ->
+        # IO.inspect(cards, label: "公共牌3张发出来了")
         :ok
       end)
       # 3.5 发完一轮公共牌之后, 下注移入pot, 更新发给玩家
@@ -413,7 +412,6 @@ defmodule SuperPoker.GameServer.HeadsupTableServerTest do
       table_id = unique_table_id()
 
       TableSupervisor.start_table(%{@table_config | id: table_id})
-      |> IO.inspect(label: "启动桌子 #{table_id} 结果")
 
       :pong = HeadsupTableServer.ping(table_id)
 

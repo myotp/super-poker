@@ -28,7 +28,6 @@ defmodule SuperPoker.GameServer.TableManager do
         _from,
         %State{all_tables: tables} = state
       ) do
-    IO.inspect({sort_by, order}, label: "===== 这里根据排序")
     tables = Enum.sort_by(tables, &Map.get(&1, sort_by), order)
     {:reply, tables, state}
   end

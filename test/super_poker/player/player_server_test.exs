@@ -4,7 +4,6 @@ defmodule SuperPoker.Player.PlayerServerTest do
   # FIXME: 这个模块真正做交互起来测试, 现在不能get_state获取HeadsupTableServer状态了, 改进测试
   @moduletag :skip
 
-  alias SuperPoker.GameServer.HeadsupTableServer
   alias SuperPoker.GameServer.TableSupervisor
   alias SuperPoker.Player.PlayerServer
 

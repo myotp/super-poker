@@ -1,0 +1,25 @@
+* PokerStars hand history
+** 基本数据库探索
+psql -d super_poker_dev
+\d sp_games
+\d sp_game_players
+\d sp_player_actions
+SELECT * FROM sp_games;
+SELECT * FROM sp_game_players;
+SELECT * FROM sp_player_actions;
+
+** 具体例子
+# 生成一个hand history
+hh1 = HandHistory.example()
+# 写入DB
+{:ok, game_id} = HistoryPersist.save_hand_history(hh1)
+# 读取
+hh2 = HistoryPersist.load_hand_history(game_id)
+# 比较二者, 除了ID以及amount类型浮点以外, 完全一致了已经
+l1 = hh1 |> Map.from_struct() |> Enum.to_list()
+l2 = hh2 |> Map.from_struct() |> Enum.to_list()
+l1 -- l2
+l2 -- l1
+# 导出到PokerStars格式文件
+PokerstarsExporter.to_string(hh2, "Anna")  |> IO.puts()
+PokerstarsExporter.to_string(hh2, "Lucas") |> IO.puts()

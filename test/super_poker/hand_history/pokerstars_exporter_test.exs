@@ -10,11 +10,14 @@ defmodule SuperPoker.HandHistory.PokerstarsExporterTest do
         %HandHistory{
           game_id: 246_357_379_051,
           start_time: NaiveDateTime.from_iso8601!("2023-10-17 15:59:40"),
-          players: %{3 => %{username: "Lucas", chips: 15}, 5 => %{username: "Anna", chips: 20}},
+          players: [
+            %{pos: 3, username: "Lucas", chips: 15},
+            %{pos: 5, username: "Anna", chips: 20}
+          ],
           button_pos: 5,
           sb_amount: 0.25,
           bb_amount: 0.5,
-          blinds: %{"Lucas" => 0.5, "Anna" => 0.25},
+          blinds: [%{username: "Lucas", amount: 0.5}, %{username: "Anna", amount: 0.25}],
           hole_cards: %{"Lucas" => "AH QC", "Anna" => "3D 2D"},
           community_cards: "QH 7H 5D 8C 9S",
           actions: [
@@ -85,7 +88,10 @@ defmodule SuperPoker.HandHistory.PokerstarsExporterTest do
     test "生成玩家信息" do
       hand_history =
         %HandHistory{
-          players: %{3 => %{username: "Lucas", chips: 15}, 5 => %{username: "Anna", chips: 20}}
+          players: [
+            %{pos: 3, username: "Lucas", chips: 15},
+            %{pos: 5, username: "Anna", chips: 20}
+          ]
         }
 
       assert PokerstarsExporter.players_info(hand_history) ==
@@ -101,7 +107,7 @@ defmodule SuperPoker.HandHistory.PokerstarsExporterTest do
     test "标准二人盲注" do
       hand_history =
         %HandHistory{
-          blinds: %{"Anna" => 0.25, "Lucas" => 0.5}
+          blinds: [%{username: "Anna", amount: 0.25}, %{username: "Lucas", amount: 0.5}]
         }
 
       assert PokerstarsExporter.blinds_info(hand_history) ==

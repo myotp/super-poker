@@ -22,22 +22,20 @@ defmodule SuperPoker.IrcDataset.IrcPlayerActionsTest do
 
       IrcPlayerActions.save_player_actions(player_actions)
 
-      assert [
-               %IrcPlayerActions{
-                 username: "Jia",
-                 game_id: 1_010_105_892,
-                 num_players: 2,
-                 pos: 1,
-                 preflop: "Bc",
-                 flop: "k",
-                 turn: "f",
-                 bankroll: 500,
-                 total_bet: 20,
-                 winnings: 0,
-                 river: nil,
-                 hole_cards: nil
-               }
-             ] = Repo.all(IrcPlayerActions)
+      assert %IrcPlayerActions{
+               username: "Jia",
+               game_id: 1_010_105_892,
+               num_players: 2,
+               pos: 1,
+               preflop: "Bc",
+               flop: "k",
+               turn: "f",
+               bankroll: 500,
+               total_bet: 20,
+               winnings: 0,
+               river: nil,
+               hole_cards: nil
+             } = Repo.get_by(IrcPlayerActions, username: "Jia", game_id: 1_010_105_892)
     end
 
     test "重复的username+game_id简单忽略便于导入数据可以反复执行" do
@@ -63,7 +61,8 @@ defmodule SuperPoker.IrcDataset.IrcPlayerActionsTest do
                IrcPlayerActions.save_player_actions(%{player_actions | pos: 222})
 
       # 实际数据库中仍为原来的值
-      assert [%IrcPlayerActions{pos: 1}] = Repo.all(IrcPlayerActions)
+      assert %IrcPlayerActions{pos: 1} =
+               Repo.get_by(IrcPlayerActions, username: "Anna", game_id: 9001)
     end
   end
 end
