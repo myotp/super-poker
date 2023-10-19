@@ -18,8 +18,29 @@ defmodule SuperPoker.HistoryPersist do
     end
   end
 
-  def load_hand_history(game_id, username) do
-    {:todo, :hand_history, game_id, username}
+  def load_hand_history(game_id) do
+    sp_game = SpGame.read_game_history_from_db(game_id)
+    actions = ActionUtil.recreate_table_and_player_actions(sp_game)
+    hole_cards = extract_hole_cards(sp_game)
+
+    %HandHistory{
+      game_id: sp_game.id,
+      start_time: sp_game.start_time,
+      sb_amount: sp_game.sb_amount,
+      bb_amount: sp_game.bb_amount,
+      button_pos: sp_game.button_pos,
+      community_cards: sp_game.community_cards,
+      hole_cards: hole_cards,
+      players: sp_game.players |> Enum.map(fn p -> Map.take(p, [:pos, :username, :chips]) end),
+      blinds: sp_game.blinds |> Enum.map(fn b -> Map.take(b, [:username, :amount]) end),
+      actions: actions
+    }
+  end
+
+  defp extract_hole_cards(sp_game) do
+    sp_game.players
+    |> Enum.map(fn p -> {p.username, p.hole_cards} end)
+    |> Map.new()
   end
 
   defp move_player_hole_cards(hh) do

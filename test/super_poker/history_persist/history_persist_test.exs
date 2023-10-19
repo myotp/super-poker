@@ -1,7 +1,7 @@
 defmodule SuperPoker.HistoryPersist.HistoryPersistTest do
-  alias SuperPoker.HistoryPersist.SpPlayerAction
   use SuperPoker.DataCase
 
+  alias SuperPoker.HistoryPersist.SpPlayerAction
   alias SuperPoker.HistoryPersist
   alias SuperPoker.HandHistory.HandHistory
   alias SuperPoker.HistoryPersist.SpGame
@@ -104,6 +104,48 @@ defmodule SuperPoker.HistoryPersist.HistoryPersistTest do
                  %PlayerAction{action: :call, amount: 40.0}
                ]
              } = anna_actions
+    end
+  end
+
+  describe "load_hand_history/1" do
+    test "从数据库中读取并转换成内存表示格式" do
+      start_time = NaiveDateTime.from_iso8601!("2023-10-17 15:59:40")
+
+      # 仿照PokerstarsExporterTest构造测试数据
+      hh =
+        %HandHistory{
+          start_time: start_time,
+          players: [
+            %{pos: 3, username: "Lucas", chips: 500},
+            %{pos: 5, username: "Anna", chips: 600}
+          ],
+          button_pos: 5,
+          sb_amount: 5,
+          bb_amount: 10,
+          blinds: [%{username: "Anna", amount: 5}, %{username: "Lucas", amount: 10}],
+          hole_cards: %{"Anna" => "3D 2D", "Lucas" => "AH QC"},
+          community_cards: "QH 7H 5D 8C 9S",
+          actions: [
+            {:player, "Anna", {:call, 5}},
+            {:player, "Lucas", :check},
+            {:deal, :flop, "QH 7H 5D"},
+            {:player, "Lucas", :check},
+            {:player, "Anna", :check},
+            {:deal, :turn, "QH 7H 5D 8C"},
+            {:player, "Lucas", :check},
+            {:player, "Anna", :check},
+            {:deal, :river, "QH 7H 5D 8C 9S"},
+            {:player, "Lucas", {:raise, 10}},
+            {:player, "Anna", {:raise, 20}},
+            {:player, "Lucas", {:raise, 50}},
+            {:player, "Anna", {:call, 40}}
+          ]
+        }
+
+      # 通过API模块HistoryPersist写入数据库并返回自动生成game_id
+      assert {:ok, game_id} = HistoryPersist.save_hand_history(hh)
+
+      assert HistoryPersist.load_hand_history(game_id) == %HandHistory{hh | game_id: game_id}
     end
   end
 end
