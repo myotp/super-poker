@@ -32,10 +32,10 @@ defmodule SuperPoker.HandHistory.ActionUtilTest do
       assert ActionUtil.prepare_player_actions_attrs(hh.actions, "Anna") ==
                %{
                  username: "Anna",
-                 preflop: [%{action: "call", amount: 0.25}, %{action: "call", amount: 5}],
-                 flop: [%{action: "raise", amount: 10}, %{action: "raise", amount: 40}],
-                 turn: [%{action: "check", amount: 0}],
-                 river: [%{action: "check", amount: 0}]
+                 preflop: [%{action: :call, amount: 0.25}, %{action: :call, amount: 5}],
+                 flop: [%{action: :raise, amount: 10}, %{action: :raise, amount: 40}],
+                 turn: [%{action: :check, amount: 0}],
+                 river: [%{action: :check, amount: 0}]
                }
     end
   end

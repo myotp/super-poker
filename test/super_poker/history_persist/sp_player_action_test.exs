@@ -13,6 +13,7 @@ defmodule SuperPoker.HistoryPersist.SpPlayerActionTest do
         button_pos: 2,
         sb_amount: 0.05,
         bb_amount: 0.10,
+        blinds: [%{username: "Anna", amount: 0.1}, %{username: "Lucas", amount: 0.05}],
         community_cards: "AH KH QH JH TH",
         players: [
           %{pos: 1, username: "Anna", chips: 10.0, hole_cards: "3C 2C"},

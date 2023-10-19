@@ -24,7 +24,7 @@ defmodule SuperPoker.HistoryPersist.HistoryPersistTest do
           button_pos: 5,
           sb_amount: 5,
           bb_amount: 10,
-          blinds: %{"Anna" => 5, "Lucas" => 10},
+          blinds: [%{username: "Anna", amount: 5}, %{username: "Lucas", amount: 10}],
           hole_cards: %{"Anna" => "3D 2D", "Lucas" => "AH QC"},
           community_cards: "QH 7H 5D 8C 9S",
           actions: [
