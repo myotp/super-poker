@@ -34,7 +34,9 @@ defmodule SuperPoker.HandHistory.PokerstarsExporter do
   def blinds_info(%HandHistory{blinds: blinds}) do
     [{u1, sb}, {u2, bb}] =
       blinds
-      |> Enum.to_list()
+      |> Enum.map(fn %{username: username, amount: amount} ->
+        {username, amount}
+      end)
       |> Enum.sort_by(fn {_username, amount} -> amount end)
 
     """

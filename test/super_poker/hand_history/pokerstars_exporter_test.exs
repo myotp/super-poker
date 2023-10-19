@@ -17,7 +17,7 @@ defmodule SuperPoker.HandHistory.PokerstarsExporterTest do
           button_pos: 5,
           sb_amount: 0.25,
           bb_amount: 0.5,
-          blinds: %{"Lucas" => 0.5, "Anna" => 0.25},
+          blinds: [%{username: "Lucas", amount: 0.5}, %{username: "Anna", amount: 0.25}],
           hole_cards: %{"Lucas" => "AH QC", "Anna" => "3D 2D"},
           community_cards: "QH 7H 5D 8C 9S",
           actions: [
@@ -107,7 +107,7 @@ defmodule SuperPoker.HandHistory.PokerstarsExporterTest do
     test "标准二人盲注" do
       hand_history =
         %HandHistory{
-          blinds: %{"Anna" => 0.25, "Lucas" => 0.5}
+          blinds: [%{username: "Anna", amount: 0.25}, %{username: "Lucas", amount: 0.5}]
         }
 
       assert PokerstarsExporter.blinds_info(hand_history) ==
