@@ -141,14 +141,3 @@ _db/0
 # 读取IrcGame
 IrcGame.load_game_with_player_actions(8001)
 IrcGame.load_game_with_player_actions(812148610)
-
-* PokerStars hand history
-# hero!
-HandHistory.example() |> PokerstarsExporter.to_string("Lucas") |> IO.puts()
-psql -d super_poker_dev
-\d sp_games
-\d sp_game_players
-\d sp_player_actions
-SELECT * FROM sp_games;
-SELECT * FROM sp_game_players;
-SELECT * FROM sp_player_actions;
