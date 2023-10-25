@@ -21,6 +21,12 @@ defmodule SuperPoker.Core.Hand do
     |> Enum.map(&Card.from_string/1)
   end
 
+  def to_string(cards) do
+    cards
+    |> Enum.map(&Card.to_string/1)
+    |> Enum.join(" ")
+  end
+
   def compare(p1_cards, p2_cards, community_cards) do
     r1 = Ranking.run(p1_cards ++ community_cards)
     r2 = Ranking.run(p2_cards ++ community_cards)

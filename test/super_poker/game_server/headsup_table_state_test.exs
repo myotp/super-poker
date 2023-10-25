@@ -111,7 +111,7 @@ defmodule SuperPoker.GameServer.HeadsupTableStateTest do
       assert state.players[1].current_street_bet == 0
     end
 
-    test "桌子启动新游戏初始化HandHistory" do
+    test "hand_history: 桌子启动新游戏初始化HandHistory" do
       ts_before_start = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
       state = State.new(default_table_config())
       assert state.hand_history == nil
@@ -172,6 +172,10 @@ defmodule SuperPoker.GameServer.HeadsupTableStateTest do
       assert state.players_cards[0] == [c1, c2]
       assert state.players_cards[1] == [c3, c4]
       assert state.deck == rest
+
+      assert %{"anna" => hand1, "bob" => hand2} = state.hand_history.hole_cards
+      assert [_, _] = String.split(hand1, " ")
+      assert [_, _] = String.split(hand2, " ")
     end
   end
 

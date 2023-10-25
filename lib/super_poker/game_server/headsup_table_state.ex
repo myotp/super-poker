@@ -265,6 +265,16 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
       end)
 
     %State{state | players_cards: hole_cards, deck: rest}
+    |> add_hole_cards_to_hand_history()
+  end
+
+  defp add_hole_cards_to_hand_history(%State{} = state) do
+    hole_cards =
+      hole_cards_info!(state)
+      |> Enum.map(fn {username, cards} -> {username, Hand.to_string(cards)} end)
+      |> Map.new()
+
+    put_in(state.hand_history.hole_cards, hole_cards)
   end
 
   def deal_community_cards!(%State{deck: deck, community_cards: community_cards} = state, street) do
