@@ -216,14 +216,29 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
       %{pos: 1, username: username1, chips: state.chips[username1]}
     ]
 
+    blinds =
+      case state.button_pos do
+        0 ->
+          [
+            %{username: username0, amount: state.sb_amount},
+            %{username: username1, amount: state.bb_amount}
+          ]
+
+        1 ->
+          [
+            %{username: username1, amount: state.sb_amount},
+            %{username: username0, amount: state.bb_amount}
+          ]
+      end
+
     hh = %HandHistory{
       start_time: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
       button_pos: state.button_pos,
       sb_amount: state.sb_amount,
       bb_amount: state.bb_amount,
       players: players,
+      blinds: blinds,
       # 其它信息等下才能知道
-      blinds: [],
       hole_cards: [],
       community_cards: "",
       actions: []

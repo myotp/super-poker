@@ -127,7 +127,8 @@ defmodule SuperPoker.GameServer.HeadsupTableStateTest do
                bb_amount: 10,
                community_cards: "",
                start_time: start_time,
-               players: players
+               players: players,
+               blinds: blinds
              } =
                state.hand_history
 
@@ -135,6 +136,9 @@ defmodule SuperPoker.GameServer.HeadsupTableStateTest do
 
       assert [%{pos: 0, username: "anna", chips: 500}, %{pos: 1, username: "bob", chips: 500}] =
                players |> Enum.sort()
+
+      assert [%{username: "anna", amount: 5}, %{username: "bob", amount: 10}] =
+               blinds |> Enum.sort()
     end
   end
 
