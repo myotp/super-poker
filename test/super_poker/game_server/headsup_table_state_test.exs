@@ -1,8 +1,9 @@
 defmodule SuperPoker.GameServer.HeadsupTableStateTest do
+  use ExUnit.Case
+
   alias SuperPoker.GameServer.HeadsupTableState, as: State
   alias SuperPoker.Core.Hand
-
-  use ExUnit.Case
+  alias SuperPoker.HandHistory.HandHistory
 
   describe "new/1" do
   end
@@ -108,6 +109,32 @@ defmodule SuperPoker.GameServer.HeadsupTableStateTest do
       assert state.players_cards == %{}
       assert state.players[0].current_street_bet == 0
       assert state.players[1].current_street_bet == 0
+    end
+
+    test "桌子启动新游戏初始化HandHistory" do
+      ts_before_start = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+      state = State.new(default_table_config())
+      assert state.hand_history == nil
+      {:ok, state} = State.join_table(state, "anna")
+      {:ok, state} = State.join_table(state, "bob")
+      {:ok, state} = State.player_start_game(state, "anna")
+      {:ok, state} = State.player_start_game(state, "bob")
+      state = State.table_start_game!(state)
+
+      assert %HandHistory{
+               button_pos: 0,
+               sb_amount: 5,
+               bb_amount: 10,
+               community_cards: "",
+               start_time: start_time,
+               players: players
+             } =
+               state.hand_history
+
+      assert NaiveDateTime.diff(start_time, ts_before_start) < 3
+
+      assert [%{pos: 0, username: "anna", chips: 500}, %{pos: 1, username: "bob", chips: 500}] =
+               players |> Enum.sort()
     end
   end
 

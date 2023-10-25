@@ -11,6 +11,7 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
   还是Rules角度看, pos永远都是[0,1], 只不过随着button移动位置两边01对应的应该是不同玩家
   """
   alias SuperPoker.Core.{Deck, Hand, Ranking}
+  alias SuperPoker.HandHistory.HandHistory
 
   @min_players 2
   # 这里的主要变化
@@ -32,7 +33,9 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
       # 动态玩家信息
       players: %{},
       chips: %{},
-      button_pos: 0
+      button_pos: 0,
+      # 牌局对战过程历史
+      hand_history: nil
     ]
   end
 
@@ -150,6 +153,7 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
     |> change_table_status_to(:RUNNING)
     |> reset_cards()
     |> reset_players_bet()
+    |> init_hand_history()
   end
 
   def table_finish_game!(%State{} = state, chips_left_from_rules_engine) do
@@ -201,6 +205,31 @@ defmodule SuperPoker.GameServer.HeadsupTableState do
       |> Map.new()
 
     %State{state | players: updated_playeres}
+  end
+
+  defp init_hand_history(%State{} = state) do
+    username0 = state.players[0].username
+    username1 = state.players[1].username
+
+    players = [
+      %{pos: 0, username: username0, chips: state.chips[username0]},
+      %{pos: 1, username: username1, chips: state.chips[username1]}
+    ]
+
+    hh = %HandHistory{
+      start_time: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
+      button_pos: state.button_pos,
+      sb_amount: state.sb_amount,
+      bb_amount: state.bb_amount,
+      players: players,
+      # 其它信息等下才能知道
+      blinds: [],
+      hole_cards: [],
+      community_cards: "",
+      actions: []
+    }
+
+    %State{state | hand_history: hh}
   end
 
   # 这里还必须是用username做key, 后续需要名字映射player_server进程
